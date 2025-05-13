@@ -1,0 +1,95 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
+
+from app.schemas.order import OrderCreate, OrderUpdate, OrderInDB, OrderDetail
+from app.services.order_service import OrderService
+from app.repositories.order_repository import OrderStatus
+from app.dependencies import get_order_service
+from app.db import get_db
+
+router = APIRouter(
+    prefix="/orders",
+    tags=["orders"],
+    responses={404: {"description": "Not found"}},
+)
+
+
+@router.post("/", response_model=OrderDetail, status_code=status.HTTP_201_CREATED)
+async def create_order(
+    order: OrderCreate,
+    order_service: OrderService = Depends(get_order_service)
+):
+    """Create a new order"""
+    created_order = await order_service.create_order(order)
+    if not created_order:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not create order, check products exist"
+        )
+    return created_order
+
+
+@router.get("/", response_model=List[OrderInDB])
+async def read_orders(
+    user_id: int,
+    order_status:OrderStatus = None,
+    order_service: OrderService = Depends(get_order_service)
+):
+    """Get all orders, or orders for a specific user if user_id is provided"""
+    
+    if user_id:
+        orders = await order_service.get_user_orders(user_id, order_status)
+    else:
+        orders = await order_service.get_all_orders()
+        
+    return orders
+
+
+@router.get("/{order_id}", response_model=OrderDetail)
+async def read_order(
+    order_id: int,
+    order_service: OrderService = Depends(get_order_service)
+):
+    """Get an order by ID with items"""
+    order = await order_service.get_order_by_id(order_id)
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+    return order
+
+
+@router.patch("/{order_id}", response_model=OrderInDB)
+async def update_order(
+    order_id: int,
+    order: OrderUpdate,
+    order_service: OrderService = Depends(get_order_service)
+):
+    """Update an order's status"""
+    updated_order = await order_service.update_order_status(order_id, order)
+    if not updated_order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+    return updated_order
+
+
+@router.post("/{order_id}/cancel", response_model=OrderInDB)
+async def cancel_order(
+    order_id: int,
+    order_service: OrderService = Depends(get_order_service)
+):
+    """Cancel an order"""
+    success = await order_service.cancel_order(order_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order not found or cannot be cancelled"
+        )
+    
+    # Get updated order
+    updated_order = await order_service.get_order_by_id(order_id)
+    return updated_order 

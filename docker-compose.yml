@@ -1,0 +1,121 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./app:/app/app  # Маунтим только директорию с кодом для быстрой разработки
+      - ./migrations:/app/migrations  # Для миграций
+      - ./alembic.ini:/app/alembic.ini  # Конфиг Alembic
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-here
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+    command: api
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=coffee_shop
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-here
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app_network
+    command: celery -A app.worker worker --loglevel=info --logfile=/app/logs/celery.log
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    networks:
+      - app_network
+    depends_on:
+      - redis
+      - celery_worker
+      - db
+    command: celery -A app.worker beat -l info --logfile=/app/logs/celery-beat.log
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "5566:5566"
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    networks:
+      - app_network
+    depends_on:
+      - redis
+      - celery_worker
+    command: celery -A app.worker flower --address=0.0.0.0 --port=5566
+
+volumes:
+  postgres_data: 
+
+networks:
+  app_network:
+    driver: bridge

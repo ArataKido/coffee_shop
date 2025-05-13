@@ -1,0 +1,104 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional
+import logging
+
+from app.repositories.category_repository import CategoryRepository
+from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryInDB
+
+logger = logging.getLogger(__name__)
+
+class CategoryService:
+    def __init__(self, db: AsyncSession, category_repository:CategoryRepository):
+        self.db = db
+        self.category_repo = category_repository
+    
+    async def get_category_by_id(self, category_id: int) -> Optional[CategoryInDB]:
+        """Get category by ID"""
+        try:
+            category = await self.category_repo.find_by_id(category_id)
+            return CategoryInDB.model_validate(category) if category else None
+        except Exception as e:
+            logger.error(f"Error getting category by ID {category_id}: {str(e)}")
+            return None
+    
+    async def get_all_categories(self) -> List[CategoryInDB]:
+        """Get all active categories"""
+        try:
+            categories = await self.category_repo.find_all_active()
+            return [CategoryInDB.model_validate(cat) for cat in categories]
+        except Exception as e:
+            logger.error(f"Error getting all categories: {str(e)}")
+            return []
+    
+    async def create_category(self, category_data: CategoryCreate, creator_id: Optional[int] = None) -> Optional[CategoryInDB]:
+        """Create a new category"""
+        try:
+            # Check if category with the same name already exists
+            existing_category = await self.category_repo.find_by_name(category_data.name)
+            if existing_category:
+                logger.warning(f"Category with name {category_data.name} already exists")
+                return None
+            
+            # Create category
+            category = self.category_repo.create_model(
+                name=category_data.name,
+                description=category_data.description
+            )
+            
+            # Save to database
+            created_category = await self.category_repo.add_and_commit(
+                category, 
+                created_by_user_id=creator_id
+            )
+            return CategoryInDB.model_validate(created_category)
+        except Exception as e:
+            logger.error(f"Error creating category: {str(e)}")
+            await self.db.rollback()
+            return None
+    
+    async def update_category(self, category_id: int, category_data: CategoryUpdate, updater_id: Optional[int] = None) -> Optional[CategoryInDB]:
+        """Update a category"""
+        try:
+            # Get existing category
+            category = await self.category_repo.find_by_id(category_id)
+            if not category:
+                logger.warning(f"Category with ID {category_id} not found")
+                return None
+            
+            # Update fields if provided
+            if category_data.name is not None:
+                category.name = category_data.name
+            if category_data.description is not None:
+                category.description = category_data.description
+            if category_data.is_active is not None:
+                category.is_active = category_data.is_active
+                
+            # Update in database
+            await self.category_repo.update(
+                category, 
+                updated_by_user_id=updater_id
+            )
+            await self.db.commit()
+            return CategoryInDB.model_validate(category)
+        except Exception as e:
+            logger.error(f"Error updating category {category_id}: {str(e)}")
+            await self.db.rollback()
+            return None
+    
+    async def delete_category(self, category_id: int) -> bool:
+        """Delete a category by setting is_active to False"""
+        try:
+            # Get existing category
+            category = await self.category_repo.find_by_id(category_id)
+            if not category:
+                logger.warning(f"Category with ID {category_id} not found")
+                return False
+            
+            # Soft delete
+            await self.category_repo.soft_delete(category)
+            await self.db.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting category {category_id}: {str(e)}")
+            await self.db.rollback()
+            return False 
