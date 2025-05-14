@@ -32,7 +32,7 @@ async def create_order(
 
 @router.get("/", response_model=List[OrderInDB])
 async def read_orders(
-    user_id: int,
+    user_id: int = None,
     order_status:OrderStatus = None,
     order_service: OrderService = Depends(get_order_service)
 ):
@@ -77,13 +77,13 @@ async def update_order(
     return updated_order
 
 
-@router.post("/{order_id}/cancel", response_model=OrderInDB)
-async def cancel_order(
+@router.delete("/{order_id}", response_model=OrderInDB)
+async def delete_order(
     order_id: int,
     order_service: OrderService = Depends(get_order_service)
 ):
     """Cancel an order"""
-    success = await order_service.cancel_order(order_id)
+    success = await order_service.delete_order(order_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

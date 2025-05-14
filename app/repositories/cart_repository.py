@@ -11,13 +11,7 @@ from app.repositories.base_repository import BaseRepository
 class CartRepository(BaseRepository):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Cart)
-    
-    async def find_by_user_id(self, user_id: int) -> List[Cart]:
-        """Find cart items by user ID"""
-        query = select(Cart).where(Cart.user_id == user_id)
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
-    
+
     async def find_product_in_cart(self, user_id: int, product_id: int) -> Optional[Cart]:
         """Find item in users cart """
         query = select(Cart).where(

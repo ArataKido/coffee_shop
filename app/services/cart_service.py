@@ -18,7 +18,7 @@ class CartService:
         """Get cart for a user"""
         try:
             # Get cart items with products
-            cart = await self.cart_repo.find_by_user_id_detail(user_id)
+            cart = await self.cart_repo.find_by(user_id=user_id)
 
             return CartDetail.model_validate(cart)
         except Exception as e:
@@ -29,19 +29,18 @@ class CartService:
         """Add an item to the cart"""
         try:
             # Check if product exists and is active
-            product = await self.product_repo.find_by_id(item_data.product_id)
+            product = await self.product_repo.find_by(id=item_data.product_id)
             if not product or not product.is_active:
                 logger.warning(f"Product {item_data.product_id} not found or inactive")
                 return None
 
             # Check if item already in cart
-            cart = await self.cart_repo.find_by_user_id(user_id=user_id)
+            cart = await self.cart_repo.find_by(user_id=user_id)
             if not cart:
                 cart = self.cart_repo.create_model(user_id=user_id)
                 await self.cart_repo.add_and_commit(cart)
 
-
-            product_in_cart = await self.cart_repo.find_product_in_cart(user_id, item_data.product_id)
+            product_in_cart = await self.cart_repo.find_by(user_id=user_id, product_id=item_data.product_id)
             if product_in_cart:
                 # Update quantity
                 product_in_cart.cart_products[0].quantity += item_data.quantity
@@ -113,7 +112,7 @@ class CartService:
         """Clear all items from the cart"""
         try:
             # Get cart items
-            cart_items = await self.cart_repo.find_by_user_id(user_id)
+            cart_items = await self.cart_repo.find_by(user_id=user_id)
             # Remove all items
             for item in cart_items:
                 await self.cart_repo.permanent_delete(item)

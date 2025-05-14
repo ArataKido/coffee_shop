@@ -11,15 +11,3 @@ class CategoryRepository(BaseRepository):
     def __init__(self, db: AsyncSession):
         super().__init__(db, Category)
     
-    async def find_by_name(self, name: str) -> Optional[Category]:
-        """Find a category by name"""
-        query = select(Category).where(Category.name == name, Category.is_active == True)
-        result = await self.db.execute(query)
-        return result.scalars().first()
-    
-    async def find_all_active(self) -> List[Category]:
-        """Find all active categories"""
-        query = select(Category).where(Category.is_active == True)
-        result = await self.db.execute(query)
-        return result.scalars().all()
-        

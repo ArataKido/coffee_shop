@@ -7,6 +7,7 @@ from app.repositories.product_repository import ProductRepository
 from app.schemas.order import OrderCreate, OrderUpdate, OrderInDB, OrderDetail
 from app.models.order import OrderStatus
 from app.models.order_item import OrderItem
+from app.utils.tasks import send_admin_order_notification
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class OrderService:
     async def get_user_orders(self, user_id: int, order_status: OrderStatus = None) -> List[OrderInDB]:
         """Get orders for a specific user"""
         try:
-            orders = await self.order_repo.find_by_user(user_id, order_status)
+            orders = await self.order_repo.find_all_by(user_id=user_id, status=order_status)
             return [OrderInDB.model_validate(order) for order in orders]
         except Exception as e:
             logger.error(f"Error getting orders for user {user_id}: {str(e)}")
@@ -91,7 +92,8 @@ class OrderService:
             
             # Commit transaction
             await self.db.commit()
-            
+            admins = [ 'user12@coffee.com', 'user2@coffee.com']
+            send_admin_order_notification.apply_async(args=[order.user_id, created_order.id, admins])
             # Get complete order with items
             return await self.get_order_by_id(created_order.id)
         except Exception as e:
@@ -124,7 +126,7 @@ class OrderService:
             await self.db.rollback()
             return None
     
-    async def cancel_order(self, order_id: int, updater_id: Optional[int] = None) -> bool:
+    async def delete_order(self, order_id: int, updater_id: Optional[int] = None) -> bool:
         """Cancel an order by setting status to CANCELLED"""
         try:
             # Get existing order

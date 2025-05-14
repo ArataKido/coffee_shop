@@ -6,9 +6,9 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./app:/app/app  # Маунтим только директорию с кодом для быстрой разработки
-      - ./migrations:/app/migrations  # Для миграций
-      - ./alembic.ini:/app/alembic.ini  # Конфиг Alembic
+      - ./app:/app/app  
+      - ./migrations:/app/migrations  
+      - ./alembic.ini:/app/alembic.ini  
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
       - REDIS_URL=redis://redis:6379/0

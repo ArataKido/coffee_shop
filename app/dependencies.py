@@ -1,4 +1,5 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.repositories.cart_repository import CartRepository
@@ -48,6 +49,12 @@ async def get_order_service(order_repo: OrderRepository = Depends(get_order_repo
                             product_repo: ProductRepository = Depends(get_product_repository)) -> OrderService:
     return OrderService(db=order_repo.db, order_repository=order_repo, product_repository=product_repo)
 
+async def get_auth_service(user_service: UserService = Depends(get_user_service)):
+    from app.services.auth_service import AuthService
+    return AuthService(user_service=user_service)
+
+async def get_oauth_scheme():
+    return OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def get_email_service():
     return EmailService()

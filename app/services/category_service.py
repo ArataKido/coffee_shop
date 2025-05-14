@@ -22,9 +22,9 @@ class CategoryService:
             return None
     
     async def get_all_categories(self) -> List[CategoryInDB]:
-        """Get all active categories"""
+        """Get all categories"""
         try:
-            categories = await self.category_repo.find_all_active()
+            categories = await self.category_repo.get_all()
             return [CategoryInDB.model_validate(cat) for cat in categories]
         except Exception as e:
             logger.error(f"Error getting all categories: {str(e)}")
@@ -34,7 +34,7 @@ class CategoryService:
         """Create a new category"""
         try:
             # Check if category with the same name already exists
-            existing_category = await self.category_repo.find_by_name(category_data.name)
+            existing_category = await self.category_repo.find_by(name=category_data.name, is_active=True)
             if existing_category:
                 logger.warning(f"Category with name {category_data.name} already exists")
                 return None
@@ -45,7 +45,6 @@ class CategoryService:
                 description=category_data.description
             )
             
-            # Save to database
             created_category = await self.category_repo.add_and_commit(
                 category, 
                 created_by_user_id=creator_id
@@ -89,7 +88,7 @@ class CategoryService:
         """Delete a category by setting is_active to False"""
         try:
             # Get existing category
-            category = await self.category_repo.find_by_id(category_id)
+            category = await self.category_repo.find_by(id=category_id)
             if not category:
                 logger.warning(f"Category with ID {category_id} not found")
                 return False

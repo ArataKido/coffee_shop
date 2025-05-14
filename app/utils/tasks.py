@@ -46,6 +46,24 @@ def check_user_status_task(user_id:int):
         logger.error(f"Error getting user by ID {user_id}: {str(e)}")
         return None
 
-@celery.task(name="notify_all_admins")
-def notify_all_admins(user_id:int order_id:int):
-    pass
+@celery.task(name="send_admin_order_notification")
+def send_admin_order_notification(user_id:int, order_id:int, admins:list[str]):
+    try: 
+        # Import UserService here to avoid circular imports
+        from app.services.user_service import UserService
+        from app.db import get_db_sync
+        
+        # Get a db session and create user_service directly using синхронный метод
+        db = next(get_db_sync())
+        user_repo = UserRepository(db)
+        user_service = UserService(db, user_repo)
+        email_service = EmailService()
+        
+        admin_emails = user_service.get_admin_emails_sync()
+        logger.error('')
+        logger.error(admin_emails)
+        logger.error(type(admin_emails))
+        email_service.send_batch_order_notification_sync(admin_emails=admin_emails, user_id=user_id, order_id=order_id)
+    except Exception as e:
+        logger.error(f"Error getting user by ID {user_id}: {str(e)}")
+        return None

@@ -32,9 +32,9 @@ class ProductService:
             return None
     
     async def get_all_products(self) -> List[ProductInDB]:
-        """Get all active products"""
+        """Get all products"""
         try:
-            products = await self.product_repo.find_by(is_active=True)
+            products = await self.product_repo.get_all()
             return [ProductInDB.model_validate(product) for product in products]
         except Exception as e:
             logger.error(f"Error getting all products: {str(e)}")

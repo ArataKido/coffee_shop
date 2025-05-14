@@ -1,19 +1,23 @@
 -- Заполнение таблицы users (с статическим id)
 INSERT INTO users (id, username, email, password, is_active, is_admin, created_at, updated_at, created_by, updated_by)
 VALUES
-(1, 'user1', 'user1@coffee.com', 'hashed_password_1', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(2, 'user2', 'user2@coffee.com', 'hashed_password_2', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(3, 'user3', 'user3@coffee.com', 'hashed_password_3', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(4, 'user11', 'user11@coffee.com', 'hashed_password_11', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(5, 'user12', 'user12@coffee.com', 'hashed_password_12', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(6, 'user13', 'user13@coffee.com', 'hashed_password_13', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(7, 'user14', 'user14@coffee.com', 'hashed_password_14', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(8, 'user15', 'user15@coffee.com', 'hashed_password_15', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(9, 'user16', 'user16@coffee.com', 'hashed_password_16', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(10, 'user17', 'user17@coffee.com', 'hashed_password_17', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(11, 'user18', 'user18@coffee.com', 'hashed_password_18', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(12, 'user19', 'user19@coffee.com', 'hashed_password_19', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
-(13, 'user20', 'user20@coffee.com', 'hashed_password_20', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL);
+(1, 'user1', 'user1@test.com', 'hashed_password_1', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(2, 'user2', 'user2@test.com', 'hashed_password_2', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(3, 'user3', 'user3@test.com', 'hashed_password_3', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(4, 'user11', 'user11@test.com', 'hashed_password_11', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(5, 'user12', 'user12@test.com', 'hashed_password_12', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(6, 'user13', 'user13@test.com', 'hashed_password_13', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(7, 'user14', 'user14@test.com', 'hashed_password_14', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(8, 'user15', 'user15@test.com', 'hashed_password_15', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(9, 'user16', 'user16@test.com', 'hashed_password_16', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(10, 'user17', 'user17@test.com', 'hashed_password_17', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(11, 'user18', 'user18@test.com', 'hashed_password_18', TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(12, 'user19', 'user19@test.com', 'hashed_password_19', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL),
+(13, 'user20', 'user20@test.com', 'hashed_password_20', TRUE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL);
+-- Set the last value for the users table
+ALTER SEQUENCE users_id_seq RESTART WITH 14;  -- Next ID will be 14
+
+
 
 -- Заполнение таблицы categories (с статическим id)
 INSERT INTO categories (id, name, description, created_at, updated_at, created_by, updated_by, is_active)
@@ -28,6 +32,9 @@ VALUES
 (8, 'Snacks', 'Quick bites', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (9, 'Hot Drinks', 'Other hot beverages', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (10, 'Cold Drinks', 'Refreshing cold beverages', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE);
+
+-- Set the last value for the categories table
+ALTER SEQUENCE categories_id_seq RESTART WITH 11;  -- Next ID will be 11
 
 -- Заполнение таблицы products (с статическим id)
 INSERT INTO products (id, name, description, price, image_url, category_id, created_at, updated_at, created_by, updated_by, is_active)
@@ -178,12 +185,19 @@ VALUES
 (144, 'Cucumber Lime Water', 'Hydrating infused water', 2.40, 'http://example.com/cucumberlimewater.jpg', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (145, 'Kiwi Cooler', 'Kiwi and lime drink', 2.60, 'http://example.com/kiwicooler.jpg', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE);
 
+-- Set the last value for the products table
+ALTER SEQUENCE products_id_seq RESTART WITH 146;  -- Next ID will be 146
+
+
 -- Заполнение таблицы carts (с статическим id)
 INSERT INTO carts (id, user_id, created_at, updated_at, created_by, updated_by, is_active)
 VALUES
 (1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (3, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE);
+-- Set the last value for the carts table
+ALTER SEQUENCE carts_id_seq RESTART WITH 4;  -- Next ID will be 4
+
 
 -- Заполнение таблицы cart_products (с статическим id)
 INSERT INTO cart_products (id, cart_id, product_id, quantity, created_at, updated_at, created_by, updated_by, is_active)
@@ -191,6 +205,8 @@ VALUES
 (1, 1, 1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (2, 1, 2, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (3, 2, 3, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE);
+
+ALTER SEQUENCE cart_products_id_seq RESTART WITH 4;  -- Next ID will be 4
 
 -- Заполнение таблицы orders (с статическим id)
 INSERT INTO orders (id, user_id, status, total_amount, created_at, updated_at, created_by, updated_by, is_active)
@@ -229,6 +245,10 @@ VALUES
 (32, 9, 'COMPLETED', 16.40, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (33, 10, 'PENDING', 11.20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE);
 
+-- Set the last value for the orders table
+
+ALTER SEQUENCE orders_id_seq RESTART WITH 34;  -- Next ID will be 34
+
 -- Заполнение таблицы order_items (с статическим id)
 INSERT INTO order_items (id, order_id, product_id, quantity, unit_price, created_at, updated_at, created_by, updated_by, is_active)
 VALUES
@@ -262,3 +282,6 @@ VALUES
 (28, 14, 15, 3, 3.20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (29, 15, 17, 2, 3.50, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE),
 (30, 15, 19, 1, 2.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, TRUE);
+
+-- Set the last value for the order_items table
+ALTER SEQUENCE order_items_id_seq RESTART WITH 31;  -- Next ID will be 31

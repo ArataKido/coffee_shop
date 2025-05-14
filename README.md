@@ -16,7 +16,7 @@ git clone https://github.com/yourusername/coffee_shop_API.git
 cd coffee_shop_API
 
 # Запустить контейнеры
-docker-compose up -d
+docker compose up -d
 ```
 
 Приложение будет доступно по адресу http://localhost:8001
@@ -30,19 +30,19 @@ docker-compose up -d
 
 ```bash
 # Запуск всех сервисов
-docker-compose up -d
+docker compose up -d
 
 # Остановка всех сервисов
-docker-compose down
+docker compose down
 
 # Просмотр логов API
-docker-compose logs -f api
+docker compose logs -f api
 
 # Просмотр логов Celery Worker
-docker-compose logs -f celery_worker
+docker compose logs -f celery_worker
 
 # Перестройка образов (при изменении зависимостей)
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 ### Миграции базы данных
@@ -51,7 +51,7 @@ docker-compose build --no-cache
 
 ```bash
 # Вход в контейнер
-docker-compose exec api bash
+docker compose exec api bash
 
 # Запуск миграций
 alembic upgrade head
@@ -78,7 +78,7 @@ alembic revision --autogenerate -m "Your migration message"
 
 ## Environment Variables
 
-Переменные окружения настроены в docker-compose.yml:
+Переменные окружения настроены в docker compose.yml:
 ```
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
 REDIS_URL=redis://redis:6379/0

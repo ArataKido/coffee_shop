@@ -22,39 +22,59 @@ class BaseRepository(Generic[T]):
         result = await self.db.execute(select(self.model_class))
         return result.scalars().all()
 
-    async def get_by_id(self, id: int) -> T:
-        """Get a record by id, raises exception if not found."""
-        result = await self.db.execute(
-            select(self.model_class).filter(self.model_class.id == id)
-        )
-        return result.scalar_one()  # Raises NoResultFound if not found
-
     async def find_by_id(self, id: int) -> Optional[T]:
         """Find a record by id, returns None if not found."""
         result = await self.db.execute(
             select(self.model_class).filter(self.model_class.id == id)
         )
         return result.scalar_one_or_none()
-        
-    # Синхронная версия для Celery
-    def find_by_id_sync(self, id: int) -> Optional[T]:
-        """Find a record by id, returns None if not found (sync version)."""
-        return self.db.get(self.model_class, id)
     
-    async def find_one_by(self, **kwargs) -> Optional[T]:
-        """Find a single record by any field(s)."""
+    async def find_by(self, **kwargs) -> Optional[T]:
+        if not kwargs:
+            raise ValueError("At least one search criteria must be provided.")
+
         filters = []
+
         for key, value in kwargs.items():
-            if hasattr(self.model_class, key):
+            if not hasattr(self.model_class, key):
+                raise AttributeError(f"Field '{key}' does not exist on model '{self.model_class.__name__}'")
+            if value is not None:
                 filters.append(getattr(self.model_class, key) == value)
         
-        result = await self.db.execute(
-            select(self.model_class).filter(*filters)
-        )
+        if not filters:
+            raise ValueError("Atl east one search value must be provided")
+        query  = select(self.model_class).filter(*filters)
+        result = await self.db.execute(query)
+
         return result.scalar_one_or_none()
+    
+    async def find_all(self) -> Optional[T]:
+        query = select(self.model_class)
+        result = await self.db.execute(query)
+
+        return result.scalars().all()
+
+    async def find_all_by(self, **kwargs) -> Optional[T]:
+        if not kwargs:
+            raise ValueError("At least one search criteria must be provided.")
+
+        filters = []
+
+        for key, value in kwargs.items():
+            if not hasattr(self.model_class, key):
+                raise AttributeError(f"Field '{key}' does not exist on model '{self.model_class.__name__}'")
+            if value is not None:
+                filters.append(getattr(self.model_class, key) == value)
         
+        if not filters:
+            raise ValueError("Atl east one search value must be provided")
+        query  = select(self.model_class).filter(*filters)
+        result = await self.db.execute(query)
+
+        return result.scalars().all()
+
     # Синхронная версия для Celery
-    def find_one_by_sync(self, **kwargs) -> Optional[T]:
+    def find_by_sync(self, **kwargs) -> Optional[T]:
         """Find a single record by any field(s) (sync version)."""
         filters = []
         for key, value in kwargs.items():
@@ -65,7 +85,6 @@ class BaseRepository(Generic[T]):
             sync_select(self.model_class).filter(*filters)
         )
         return result.scalar_one_or_none()
-
     def create_model(self, **data) -> T:
         """
         Factory method to create a model instance without saving to the database.
@@ -139,7 +158,7 @@ class BaseRepository(Generic[T]):
     # Синхронная версия для Celery
     def permanent_delete_sync(self, model_id: int) -> None:
         """Permanently delete a model by ID from the database (sync version)."""
-        model = self.find_by_id_sync(model_id)
+        model = self.find_by_sync(id=model_id)
         if model:
             self.db.delete(model)
             self.db.flush()

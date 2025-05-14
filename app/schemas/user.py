@@ -24,10 +24,16 @@ class UserSchema(UserBaseSchema):
     is_admin: Optional[bool] = False
     
 
+class UserWithPassword(UserSchema):
+    password: str 
+
+
 class UserUpdateSchema(BaseModel):
     """DTO for updating an existing user."""
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
     
     model_config = ConfigDict(from_attributes=True)
