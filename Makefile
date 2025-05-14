@@ -55,6 +55,11 @@ rebuild: down
 status:
 	$(DOCKER_COMPOSE) ps
 
+populate:
+	@echo "Populating database with test data..."
+	$(DOCKER_COMPOSE) exec -it api psql -U posgtres -d coffee_shop < sql/test_data.sql
+
+
 help:
 	@echo "Доступные команды:"
 	@echo "  make build             - Собрать образы"
