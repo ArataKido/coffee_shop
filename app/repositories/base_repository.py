@@ -22,6 +22,7 @@ class BaseRepository(Generic[T]):
         result = await self.db.execute(select(self.model_class))
         return result.scalars().all()
 
+    #TODO снести нахрен и заменить на find_by 
     async def find_by_id(self, id: int) -> Optional[T]:
         """Find a record by id, returns None if not found."""
         result = await self.db.execute(
