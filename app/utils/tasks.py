@@ -60,9 +60,6 @@ def send_admin_order_notification(user_id:int, order_id:int, admins:list[str]):
         email_service = EmailService()
         
         admin_emails = user_service.get_admin_emails_sync()
-        logger.error('')
-        logger.error(admin_emails)
-        logger.error(type(admin_emails))
         email_service.send_batch_order_notification_sync(admin_emails=admin_emails, user_id=user_id, order_id=order_id)
     except Exception as e:
         logger.error(f"Error getting user by ID {user_id}: {str(e)}")

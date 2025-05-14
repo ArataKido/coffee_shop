@@ -1,12 +1,11 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from typing import Optional
 from datetime import datetime, timedelta, UTC
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import JWTError, ExpiredSignatureError, jwt
 
 from app.config import settings
 from app.schemas.token import Token
-from app.dependencies.auth_dependencies import get_user_service, get_oauth_scheme
 from app.schemas.user import UserCreateSchema, UserSchema
 from app.services.user_service import UserService
 from app.utils.security import get_password_hash, verify_password
@@ -20,12 +19,12 @@ class AuthService:
     oauth2_scheme: OAuth2PasswordBearer
     
     def __init__(self, 
-                user_service: UserService = Depends(get_user_service),
-                oauth_scheme: OAuth2PasswordBearer = Depends(get_oauth_scheme)
+                user_service: UserService,
+                oauth_scheme: OAuth2PasswordBearer
                 ):
         self.user_service = user_service  
         self.oauth2_scheme = oauth_scheme
-    
+
 
     async def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
         to_encode = data.copy()
@@ -36,15 +35,15 @@ class AuthService:
     async def decode_access_token(self, token: str) -> dict | None:
         """Decodes the JWT token and returns the payload."""
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             return payload
-        except jwt.ExpiredSignatureError:
+        except ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        except jwt.PyJWTError:
+        except JWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials (JWT error)",
@@ -75,7 +74,6 @@ class AuthService:
             if user is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
             
-            # Check if user is active (assuming UserSchema has an is_active attribute)
             if not getattr(user, "is_active", True):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
             return user 
