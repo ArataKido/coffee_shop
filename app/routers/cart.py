@@ -4,7 +4,7 @@ from typing import List
 
 from app.schemas.cart import CartDetail, CartItemCreate, CartItemUpdate
 from app.services.cart_service import CartService
-from app.dependencies import get_cart_service
+from app.dependencies.dependencies import get_cart_service
 from app.db import get_db
 
 router = APIRouter(

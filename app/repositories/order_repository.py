@@ -14,7 +14,9 @@ class OrderRepository(BaseRepository):
     async def find_with_items(self, order_id: int) -> Optional[Order]:
         """Find an order with its items"""
         query = select(Order).where(
-            Order.id == order_id
+            Order.id == order_id,
+            Order.is_active is True
+            
         ).options(
             selectinload(Order.items)
         )

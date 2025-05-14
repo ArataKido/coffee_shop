@@ -18,7 +18,7 @@ class CartService:
         """Get cart for a user"""
         try:
             # Get cart items with products
-            cart = await self.cart_repo.find_by(user_id=user_id)
+            cart = await self.cart_repo.find_by_user_id_detail(user_id=user_id)
 
             return CartDetail.model_validate(cart)
         except Exception as e:
@@ -28,8 +28,8 @@ class CartService:
     async def add_item_to_cart(self, user_id: int, item_data: CartItemCreate) -> CartDetail | None:
         """Add an item to the cart"""
         try:
-            # Check if product exists and is active
-            product = await self.product_repo.find_by(id=item_data.product_id)
+        # Check if product exists and is active
+            product = await self.product_repo.find_by(id=item_data.product_id, is_active=True)
             if not product or not product.is_active:
                 logger.warning(f"Product {item_data.product_id} not found or inactive")
                 return None
@@ -40,10 +40,10 @@ class CartService:
                 cart = self.cart_repo.create_model(user_id=user_id)
                 await self.cart_repo.add_and_commit(cart)
 
-            product_in_cart = await self.cart_repo.find_by(user_id=user_id, product_id=item_data.product_id)
-            if product_in_cart:
+            cart_product = await self.cart_repo.find_product_in_cart(user_id=user_id, product_id=item_data.product_id)
+            if cart_product:
                 # Update quantity
-                product_in_cart.cart_products[0].quantity += item_data.quantity
+                cart_product.quantity += item_data.quantity
                 await self.db.commit()
             else:
                 # Create new cart item
@@ -54,7 +54,7 @@ class CartService:
                 )
                 self.db.add(cart_item)
                 await self.db.commit()
-            # Return updated cart
+                # Return updated cart
             return await self.get_user_cart(user_id)
         except Exception as e:
             logger.error(f"Error adding item to cart for user {user_id}: {str(e)}")
@@ -65,21 +65,21 @@ class CartService:
         """Update a cart item"""
         try:
             # Get cart item
-            cart = await self.cart_repo.find_product_in_cart(user_id, product_id)
-            if not cart or cart.user_id != user_id:
+            cart_product = await self.cart_repo.find_product_in_cart(user_id, product_id)
+            if not cart_product:
                 logger.warning(f"Cart item {product_id} not found in user's cart")
                 return None
             
             # Update quantity
             if item_data.quantity <= 0:
                 # Remove item if quantity is zero or negative
-                await self.cart_repo.delete_product_from_cart(cart_id=cart.id, product_id=product_id)
+                await self.cart_repo.delete_product_from_cart(cart_id=cart_product.cart_id, product_id=product_id)
+                await self.db.commit()
             else:
                 # Update quantity
-                cart.cart_products.quantity = item_data.quantity
+                cart_product.quantity = item_data.quantity
                 await self.db.commit()
             
-            # await self.db.commit()
             
             # Return updated cart
             return await self.get_user_cart(user_id)

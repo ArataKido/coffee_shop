@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_pagination import Page, paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryInDB
 from app.services.category_service import CategoryService
-from app.dependencies import get_category_service
+from app.dependencies.dependencies import get_category_service
 from app.db import get_db
 
 router = APIRouter(
@@ -29,13 +30,13 @@ async def create_category(
     return created_category
 
 
-@router.get("/", response_model=List[CategoryInDB])
+@router.get("/", response_model=Page[CategoryInDB])
 async def read_categories(
     category_service: CategoryService = Depends(get_category_service)
 ):
     """Get all categories"""
     categories = await category_service.get_all_categories()
-    return categories
+    return paginate(categories)
 
 
 @router.get("/{category_id}", response_model=CategoryInDB)

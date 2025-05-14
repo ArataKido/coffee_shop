@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_pagination import Page, paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.schemas.order import OrderCreate, OrderUpdate, OrderInDB, OrderDetail
 from app.services.order_service import OrderService
 from app.repositories.order_repository import OrderStatus
-from app.dependencies import get_order_service
+from app.dependencies.dependencies import get_order_service
 from app.db import get_db
 
 router = APIRouter(
@@ -30,12 +31,12 @@ async def create_order(
     return created_order
 
 
-@router.get("/", response_model=List[OrderInDB])
+@router.get("/", response_model=Page[OrderInDB])
 async def read_orders(
     user_id: int = None,
     order_status:OrderStatus = None,
     order_service: OrderService = Depends(get_order_service)
-):
+) -> Page[OrderInDB]:
     """Get all orders, or orders for a specific user if user_id is provided"""
     
     if user_id:
@@ -43,7 +44,7 @@ async def read_orders(
     else:
         orders = await order_service.get_all_orders()
         
-    return orders
+    return paginate(orders)
 
 
 @router.get("/{order_id}", response_model=OrderDetail)

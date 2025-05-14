@@ -148,6 +148,10 @@ class OrderService:
                 order, 
                 updated_by_user_id=updater_id
             )
+            await self.order_repo.soft_delete(
+                order, 
+                deleted_by_user_id=updater_id
+                )
             await self.db.commit()
             return True
         except Exception as e:

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi_pagination import Page, paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from app.schemas.product import ProductCreate, ProductUpdate, ProductInDB, ProductDetail
 from app.services.product_service import ProductService
-from app.dependencies import get_product_service
+from app.dependencies.dependencies import get_product_service
 from app.db import get_db
 
 router = APIRouter(
@@ -29,7 +30,7 @@ async def create_product(
     return created_product
 
 
-@router.get("/", response_model=List[ProductInDB])
+@router.get("/", response_model=Page[ProductInDB])
 async def read_products(
     category_id: Optional[int] = Query(None, description="Filter by category ID"),
     limit: Optional[int] = Query(None, description="Limit how many products you retrieve "),
@@ -43,7 +44,7 @@ async def read_products(
     else:
         products = await product_service.get_all_products()
         
-    return products
+    return paginate(products)
 
 
 @router.get("/{product_id}", response_model=ProductDetail)

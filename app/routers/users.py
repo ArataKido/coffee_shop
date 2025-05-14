@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_pagination import Page, paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -6,7 +7,7 @@ from app.schemas.order import OrderCreate, OrderUpdate, OrderInDB, OrderDetail
 from app.schemas.user import UserCreateSchema, UserSchema, UserUpdateSchema
 from app.services.order_service import OrderService
 from app.repositories.order_repository import OrderStatus
-from app.dependencies import get_order_service, get_user_service
+from app.dependencies.dependencies import get_order_service, get_user_service
 from app.db import get_db
 from app.services.user_service import UserService
 
@@ -30,13 +31,13 @@ async def read_user(user_id: int, user_service: UserService = Depends(get_user_s
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.get('/', response_model=list[UserSchema])
+@router.get('/', response_model=Page[UserSchema])
 async def read_users(user_service: UserService = Depends(get_user_service)):
-    return await user_service.get_all_users()
+    return paginate(await user_service.get_all_users())
 
 @router.patch('/{user_id}', response_model=UserSchema)
 async def patch_user(user_id: int, user_data: UserUpdateSchema, user_service: UserService = Depends(get_user_service)):
-    updated_user = await user_service.patch_update_user(user_id, user_data)  # Pass user_id and data
+    updated_user = await user_service.patch_update_user(user_id, user_data)  
     if updated_user is None:
         raise HTTPException(status_code=404, detail="User not found or update failed")
     return updated_user

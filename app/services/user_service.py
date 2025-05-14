@@ -7,6 +7,7 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreateSchema, UserSchema, UserUpdateSchema, UserWithPassword
 from app.utils.tasks import send_verification_email_task, check_user_status_task
 from app.config import settings
+from app.utils.security import get_password_hash, verify_password
 
 import logging
 
@@ -114,11 +115,8 @@ class UserService:
     async def patch_update_user(self, user_id: int, user_data: UserUpdateSchema) -> Optional[UserSchema]:
         """Patch update method for user.
             I would prefer generic method for all models, but because
-
             I am short on time, I wrote this method.
         """
-        from app.dependencies import get_auth_service
-        auth_service = await get_auth_service()
         try:
             user = await self.user_repo.find_by(id=user_id)  
             if not user:
@@ -130,7 +128,7 @@ class UserService:
             if user_data.email is not None:
                 user.email = user_data.email  
             if user_data.password is not None:
-                user.password = await auth_service.get_password_hash(user_data.password)  # Hash password if updating
+                user.password = await get_password_hash(user_data.password)  # Hash password if updating
             if user_data.is_admin is not None:
                 user.is_admin = user_data.is_admin
             if user_data.is_active is not None:

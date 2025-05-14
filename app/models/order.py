@@ -23,6 +23,7 @@ class Order(BaseModel):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.PENDING)
     total_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    is_active: Mapped[bool] = mapped_column(default=True)
     
     # Relationships
     user: Mapped["User"] = relationship(back_populates="orders")

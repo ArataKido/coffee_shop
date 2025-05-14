@@ -1,8 +1,9 @@
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_pagination import add_pagination
 from app.schemas.user import UserCreateSchema, UserSchema
 from app.services.user_service import UserService
-from app.dependencies import get_user_service
+from app.dependencies.dependencies import get_user_service
 import logging
 
 # Import routers
@@ -31,5 +32,7 @@ app.include_router(orders.router)
 app.include_router(cart.router)
 app.include_router(auth.router)
 app.include_router(users.router)
+
+add_pagination(app)
 
 
