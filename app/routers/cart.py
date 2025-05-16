@@ -5,6 +5,7 @@ from typing import List
 from app.schemas.cart import CartDetail, CartItemCreate, CartItemUpdate
 from app.services.cart_service import CartService
 from app.dependencies.dependencies import get_cart_service
+from app.dependencies.auth_dependencies import get_current_active_user
 from app.db import get_db
 
 router = APIRouter(
@@ -14,13 +15,23 @@ router = APIRouter(
 )
 
 
-@router.get("/{user_id}", response_model=CartDetail)
+@router.get("/", response_model=CartDetail)
 async def read_user_cart(
-    user_id: int,
+    user = Depends(get_current_active_user),
     cart_service: CartService = Depends(get_cart_service)
 ):
-    """Get a user's cart with items"""
-    cart = await cart_service.get_user_cart(user_id)
+    """
+    Get a user's cart with items
+
+    Parameters:
+        - user: current users information. used for fetching cart data 
+        - cart_service: Cart service used for getting cart information
+
+    Returns:
+        A JSON response containing the cart information.
+    """
+
+    cart = await cart_service.get_user_cart(user.id)
     if not cart:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -35,7 +46,16 @@ async def add_item_to_cart(
     item: CartItemCreate,
     cart_service: CartService = Depends(get_cart_service)
 ):
-    """Add an item to the cart"""
+    """
+    Add item to users cart
+
+    Parameters:
+        - user_id: users id, used for fetching and adding items to the cart 
+        - cart_service: Cart service used for getting cart information
+
+    Returns:
+        A JSON response containing the cart information.
+    """
     cart = await cart_service.add_item_to_cart(user_id, item)
     if not cart:
         raise HTTPException(
@@ -52,7 +72,18 @@ async def update_cart_item(
     item_data: CartItemUpdate,
     cart_service: CartService = Depends(get_cart_service)
 ):
-    """Update a cart item quantity"""
+    """
+    Update item in users cart
+
+    Parameters:
+        - user_id: users id, used for fetching and adding items to the cart 
+        - item_id: item_id, used for fetching and adding items to the cart 
+        - item_data: Hold information regarding update information
+        - cart_service: Cart service used for getting cart information
+
+    Returns:
+        A JSON response containing the cart information.
+    """
     cart = await cart_service.update_cart_item(user_id, item_id, item_data)
     if not cart:
         raise HTTPException(
@@ -68,7 +99,17 @@ async def remove_cart_item(
     item_id: int,
     cart_service: CartService = Depends(get_cart_service)
 ):
-    """Remove an item from the cart"""
+    """
+    Revome item from users cart
+
+    Parameters:
+        - user_id: users id, used for fetching and adding items to the cart 
+        - item_id: item_id, used for fetching item 
+        - cart_service: Cart service used for getting cart information
+
+    Returns:
+        A JSON response containing the cart information.
+    """
     cart = await cart_service.remove_cart_item(user_id, item_id)
     if not cart:
         raise HTTPException(

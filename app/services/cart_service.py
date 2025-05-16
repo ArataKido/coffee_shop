@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
+from app.exceptions.exceptions import NotFoundException
 from app.repositories.cart_repository import CartRepository
 from app.repositories.product_repository import ProductRepository
 from app.schemas.cart import CartDetail, CartItemCreate, CartItemUpdate
@@ -16,14 +17,12 @@ class CartService:
     
     async def get_user_cart(self, user_id: int) -> CartDetail | None:
         """Get cart for a user"""
-        try:
-            # Get cart items with products
-            cart = await self.cart_repo.find_by_user_id_detail(user_id=user_id)
-
-            return CartDetail.model_validate(cart)
-        except Exception as e:
+        # Get cart items with products
+        cart = await self.cart_repo.find_by_user_id_detail(user_id=user_id)
+        if not cart:
             logger.error(f"Error getting cart for user {user_id}: {str(e)}")
-            return None
+            raise NotFoundException("Users cart was not found")
+        return CartDetail.model_validate(cart)
     
     async def add_item_to_cart(self, user_id: int, item_data: CartItemCreate) -> CartDetail | None:
         """Add an item to the cart"""

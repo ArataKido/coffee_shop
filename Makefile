@@ -57,21 +57,22 @@ status:
 
 populate:
 	@echo "Populating database with test data..."
-	$(DOCKER_COMPOSE) exec -it api psql -U posgtres -d coffee_shop < sql/test_data.sql
+	$(DOCKER_COMPOSE) exec -T db  psql -U postgres -d coffee_shop < sql/test_data.sql
 
 
 help:
-	@echo "Доступные команды:"
-	@echo "  make build             - Собрать образы"
-	@echo "  make up                - Запустить контейнеры"
-	@echo "  make down              - Остановить контейнеры"
-	@echo "  make logs              - Показать логи всех контейнеров"
-	@echo "  make logs-api          - Показать логи API"
-	@echo "  make logs-celery       - Показать логи Celery Worker"
-	@echo "  make restart           - Перезапустить контейнеры"
-	@echo "  make shell             - Запустить bash в контейнере API"
-	@echo "  make migrate           - Применить миграции"
-	@echo "  make migrations-generate m='Сообщение'  - Создать миграцию"
-	@echo "  make clean             - Удалить временные файлы Python"
-	@echo "  make rebuild           - Полная перестройка с нуля"
-	@echo "  make status            - Проверить статус контейнеров" 
+	@echo "Available commands:"
+	@echo "  make build             - Create images"
+	@echo "  make up                - Start containers"
+	@echo "  make down              - Stop containers"
+	@echo "  make logs              - Show containers logs "
+	@echo "  make logs-api          - Show api containers logs"
+	@echo "  make logs-celery       - Show celery worker logs"
+	@echo "  make restart           - Restart containers"
+	@echo "  make shell             - Run bash in API container"
+	@echo "  make migrate           - Run migrations"
+	@echo "  make migrations-generate m='Message'  - Make migrations"
+	@echo "  make clean             - Delete temp Python files"
+	@echo "  make rebuild           - rebuild containers
+	@echo "  make status            - Check container status" 
+	@echo "  make populate          - Populate database with test data" 

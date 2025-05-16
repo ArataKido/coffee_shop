@@ -8,7 +8,7 @@ from app.config import settings  # Assuming you have a settings module for confi
 # Create an async engine with a connection pool
 engine = create_async_engine(
     settings.database_url,
-    echo=True,  # Set to False in production to disable SQL logging
+    echo=False,  # Set to False in production to disable SQL logging
     future=True,
 )
 
@@ -24,7 +24,7 @@ AsyncSessionLocal = sessionmaker(
 sync_db_url = settings.database_url.replace('+asyncpg', '')
 sync_engine = create_engine(
     sync_db_url,
-    echo=True,  # Set to False in production
+    echo=False,  # Set to False in production
     future=True,
 )
 

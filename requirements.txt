@@ -56,3 +56,4 @@ vine==5.1.0
 wcwidth==0.2.13
 websockets==12.0
 fastapi-pagination==0.13.1
+colorlog==6.9.0

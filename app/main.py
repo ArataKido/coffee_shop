@@ -1,19 +1,19 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import FastAPI 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
-from app.schemas.user import UserCreateSchema, UserSchema
-from app.services.user_service import UserService
-from app.dependencies.dependencies import get_user_service
-import logging
+from app.middleware.logging_middleware import LoggingMiddleware
+from fastapi_pagination.utils import disable_installed_extensions_check
 
-# Import routers
 from app.routers import categories, products, orders, cart, auth, users
 
 app = FastAPI(
     title="Coffee Shop API",
     description="API for Coffee Shop Management System",
     version="1.0.0",
-    # swagger_ui_parameters={"docExpansion": "list", "tryItOutEnabled": True},
+    contact={
+        "name": "Shahzod Ravshanov",
+        "telegram" : "https://t.me/ArataKido"
+    }
 )
 
 # Configure CORS
@@ -25,6 +25,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(LoggingMiddleware)
+
 # Include routers
 app.include_router(categories.router)
 app.include_router(products.router)
@@ -34,5 +36,5 @@ app.include_router(auth.router)
 app.include_router(users.router)
 
 add_pagination(app)
-
+disable_installed_extensions_check()
 

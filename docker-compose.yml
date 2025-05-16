@@ -4,15 +4,23 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8001:8001"
+      - "${API_EXTERNAL_PORT:-8001}:8001"
     volumes:
       - ./app:/app/app  
       - ./migrations:/app/migrations  
       - ./alembic.ini:/app/alembic.ini  
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=your-secret-key-here
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SENDER_EMAIL: ${SENDER_EMAIL}
+      USER_DELETE_TIMEOUT: ${USER_DELETE_TIMEOUT}
+      LOG_FILE_PATH: ${LOG_FILE_PATH}
+      LOG_DESTINATIONS: ${LOG_DESTINATIONS}
     depends_on:
       - db
       - redis
@@ -23,11 +31,11 @@ services:
   db:
     image: postgres:15
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=coffee_shop
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5433:5432"
+      - "${DB_EXTERNAL_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -41,7 +49,7 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "${REDIS_EXTERNAL_PORT:-6379}:${REDIS_PORT:-6379}" 
     networks:
       - app_network
     healthcheck:
@@ -58,11 +66,17 @@ services:
       - ./app:/app/app
       - ./logs:/app/logs
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=your-secret-key-here
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SENDER_EMAIL: ${SENDER_EMAIL}
+      USER_DELETE_TIMEOUT: ${USER_DELETE_TIMEOUT}
+      LOG_FILE_PATH: ${LOG_FILE_PATH}
+      LOG_DESTINATIONS: ${LOG_DESTINATIONS}
     depends_on:
       - redis
       - db
@@ -79,10 +93,17 @@ services:
       - ./app:/app/app
       - ./logs:/app/logs
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SENDER_EMAIL: ${SENDER_EMAIL}
+      USER_DELETE_TIMEOUT: ${USER_DELETE_TIMEOUT}
+      LOG_FILE_PATH: ${LOG_FILE_PATH}
+      LOG_DESTINATIONS: ${LOG_DESTINATIONS}
     networks:
       - app_network
     depends_on:
@@ -97,15 +118,20 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "5566:5566"
+      - "${FLOWER_EXTERNAL_PORT:-5566}:5566"
     volumes:
       - ./app:/app/app
       - ./logs:/app/logs
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/coffee_shop
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SENDER_EMAIL: ${SENDER_EMAIL}
+      USER_DELETE_TIMEOUT: ${USER_DELETE_TIMEOUT}
     networks:
       - app_network
     depends_on:
@@ -118,4 +144,3 @@ volumes:
 
 networks:
   app_network:
-    driver: bridge

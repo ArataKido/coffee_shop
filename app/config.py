@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 import os
 
-DOTENV = os.path.join(os.path.dirname(__file__), ".env")
+# DOTENV = os.path.join(os.path.dirname(__file__), ".env")
 
 class Settings(BaseSettings):
     database_url: str = Field(..., env="DATABASE_URL")
@@ -19,13 +19,12 @@ class Settings(BaseSettings):
     sender_email: str = Field(..., env="SENDER_EMAIL")
     verification_base_url: str = Field("http://localhost:8000/verify", env="VERIFICATION_BASE_URL")
 
-    model_config = SettingsConfigDict(env_file=DOTENV)
-    
-    #TASKS
     user_delete_timeout: int = Field(..., env="USER_DELETE_TIMEOUT")
+    log_destinations: str = Field(..., env="LOG_DESTINATIONS")
+    log_file_path: str = Field(..., env="LOG_FILE_PATH")
     
-    # class Config:
-    #     env_file = ".env"
-    #     env_file_encoding = "utf-8"
-        
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore')
+
+
 settings = Settings()  
