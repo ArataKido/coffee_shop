@@ -1,0 +1,106 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${API_EXTERNAL_PORT:-8000}:8000"
+    volumes:
+      - ./app:/app/app  
+      - ./migrations:/app/migrations  
+      - ./alembic.ini:/app/alembic.ini  
+    env_file: 
+    - .env.backend
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+    command: api
+
+  db:
+    image: postgres:15
+    env_file: 
+    - .env.database
+    ports:
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:${REDIS_PORT:-6379}" 
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    env_file: 
+    - .env.backend
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app_network
+    command: celery -A app.worker worker --loglevel=info --logfile=/app/logs/celery.log
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    env_file: 
+    - .env.backend
+    networks:
+      - app_network
+    depends_on:
+      - redis
+      - celery_worker
+      - db
+    command: celery -A app.worker beat -l info --logfile=/app/logs/celery-beat.log
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "${FLOWER_EXTERNAL_PORT:-5566}:5566"
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+    env_file: 
+    - .env.backend
+    networks:
+      - app_network
+    depends_on:
+      - redis
+      - celery_worker
+    command: celery -A app.worker flower --address=0.0.0.0 --port=5566
+
+volumes:
+  postgres_data: 
+
+networks:
+  app_network:
