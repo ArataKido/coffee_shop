@@ -13,6 +13,7 @@ click-plugins==1.1.1
 click-repl==0.3.0
 colorama==0.4.6
 cryptography==44.0.3
+dishka==1.6.0
 dnspython==2.7.0
 ecdsa==0.19.1
 email_validator==2.2.0
