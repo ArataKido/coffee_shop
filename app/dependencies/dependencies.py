@@ -18,37 +18,37 @@ from app.services.product_service import ProductService
 from app.services.user_service import UserService
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_cart_repository(db: AsyncSession = Depends(get_db)) -> CartRepository:
     return CartRepository(db)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_category_repository(db: AsyncSession = Depends(get_db)) -> CategoryRepository:
     return CategoryRepository(db)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_product_repository(db: AsyncSession = Depends(get_db)) -> ProductRepository:
     return ProductRepository(db)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_order_repository(db: AsyncSession = Depends(get_db)) -> OrderRepository:
     return OrderRepository(db)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_user_service(user_repo: UserRepository = Depends(get_user_repository)) -> UserService:
     return UserService(db=user_repo.db, user_repository=user_repo)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_cart_service(
     cart_repo: CartRepository = Depends(get_cart_repository),
     product_repo: CartRepository = Depends(get_product_repository),
@@ -56,12 +56,12 @@ async def get_cart_service(
     return CartService(db=cart_repo.db, cart_repository=cart_repo, product_repository=product_repo)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_category_service(category_repo: CategoryRepository = Depends(get_category_repository)) -> CategoryService:
     return CategoryService(db=category_repo.db, category_repository=category_repo)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_product_service(
     product_repo: ProductRepository = Depends(get_product_repository),
     category_repo: CategoryRepository = Depends(get_category_repository),
@@ -69,7 +69,7 @@ async def get_product_service(
     return ProductService(db=product_repo.db, product_repository=product_repo, category_repository=category_repo)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_order_service(
     order_repo: OrderRepository = Depends(get_order_repository),
     product_repo: ProductRepository = Depends(get_product_repository),
@@ -77,18 +77,18 @@ async def get_order_service(
     return OrderService(db=order_repo.db, order_repository=order_repo, product_repository=product_repo)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_auth_service(user_service: UserService = Depends(get_user_service)):
     from app.services.auth_service import AuthService
 
     return AuthService(user_service=user_service)
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 async def get_oauth_scheme():
     return OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
-@deprecated(reason="This DI dependency is deprecated, use the new depencency system instead")
+@deprecated("This DI dependency is deprecated, use the providers and container instead")
 def get_email_service():
     return EmailService()

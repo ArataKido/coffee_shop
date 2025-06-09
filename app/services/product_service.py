@@ -2,19 +2,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.product_repository import ProductRepository
-from app.schemas.product import ProductCreate, ProductDetail, ProductInDB, ProductUpdate
+from app.schemas.product_schema import ProductCreate, ProductDetail, ProductInDB, ProductUpdate
 from app.utils.loggers.logger import Logger
 
-logger = Logger()
 
 
 class ProductService:
     def __init__(
-        self, db: AsyncSession, product_repository: ProductRepository, category_repository: CategoryRepository
+        self, db: AsyncSession, product_repository: ProductRepository, category_repository: CategoryRepository, logger:Logger
     ):
         self.db = db
         self.product_repo = product_repository
         self.category_repo = category_repository
+        self.logger = logger
 
     async def get_product_by_id(self, product_id: int) -> ProductDetail | None:
         """Get product by ID with category details"""
@@ -29,7 +29,7 @@ class ProductService:
 
             return product_detail
         except Exception as e:
-            logger.exception(f"Error getting product by ID {product_id}: {e!s}")
+            self.logger.exception(f"Error getting product by ID {product_id}: {e!s}")
             return None
 
     async def get_all_products(self) -> list[ProductInDB]:
@@ -38,7 +38,7 @@ class ProductService:
             products = await self.product_repo.get_all()
             return [ProductInDB.model_validate(product) for product in products]
         except Exception as e:
-            logger.exception(f"Error getting all products: {e!s}")
+            self.logger.exception(f"Error getting all products: {e!s}")
             return []
 
     async def get_products_by_category(
@@ -49,7 +49,7 @@ class ProductService:
             products = await self.product_repo.find_by_category(category_id, limit, offset)
             return [ProductInDB.model_validate(product) for product in products]
         except Exception as e:
-            logger.exception(f"Error getting products by category {category_id}: {e!s}")
+            self.logger.exception(f"Error getting products by category {category_id}: {e!s}")
             return []
 
     async def create_product(self, product_data: ProductCreate, creator_id: int | None = None) -> ProductInDB | None:
@@ -58,7 +58,7 @@ class ProductService:
             # Check if category exists
             category = await self.category_repo.find_by_id(product_data.category_id)
             if not category or not category.is_active:
-                logger.warning(f"Category with ID {product_data.category_id} not found or inactive")
+                self.logger.warning(f"Category with ID {product_data.category_id} not found or inactive")
                 return None
 
             # Create product
@@ -74,7 +74,7 @@ class ProductService:
             created_product = await self.product_repo.add_and_commit(product, created_by_user_id=creator_id)
             return ProductInDB.model_validate(created_product)
         except Exception as e:
-            logger.exception(f"Error creating product: {e!s}")
+            self.logger.exception(f"Error creating product: {e!s}")
             await self.db.rollback()
             return None
 
@@ -86,14 +86,14 @@ class ProductService:
             # Get existing product
             product = await self.product_repo.find_by_id(product_id)
             if not product:
-                logger.warning(f"Product with ID {product_id} not found")
+                self.logger.warning(f"Product with ID {product_id} not found")
                 return None
 
             # Check category if updating
             if product_data.category_id is not None:
                 category = await self.category_repo.find_by_id(product_data.category_id)
                 if not category or not category.is_active:
-                    logger.warning(f"Category with ID {product_data.category_id} not found or inactive")
+                    self.logger.warning(f"Category with ID {product_data.category_id} not found or inactive")
                     return None
 
             # Update fields if provided
@@ -115,7 +115,7 @@ class ProductService:
             await self.db.commit()
             return ProductInDB.model_validate(product)
         except Exception as e:
-            logger.exception(f"Error updating product {product_id}: {e!s}")
+            self.logger.exception(f"Error updating product {product_id}: {e!s}")
             await self.db.rollback()
             return None
 
@@ -125,7 +125,7 @@ class ProductService:
             # Get existing product
             product = await self.product_repo.find_by_id(product_id)
             if not product:
-                logger.warning(f"Product with ID {product_id} not found")
+                self.logger.warning(f"Product with ID {product_id} not found")
                 return False
 
             # Soft delete
@@ -133,6 +133,6 @@ class ProductService:
             await self.db.commit()
             return True
         except Exception as e:
-            logger.exception(f"Error deleting product {product_id}: {e!s}")
+            self.logger.exception(f"Error deleting product {product_id}: {e!s}")
             await self.db.rollback()
             return False

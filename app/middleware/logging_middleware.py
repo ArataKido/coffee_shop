@@ -7,11 +7,11 @@ from fastapi import Request, Response
 from fastapi.concurrency import iterate_in_threadpool
 from starlette.background import BackgroundTask
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import Message
+from starlette.types import ASGIApp
 
 from app.utils.loggers.logger import Logger
 
-logger = Logger()
+# self.logger = self.Logger()
 
 
 def get_replay_receive(body_bytes: bytes):
@@ -30,7 +30,10 @@ def get_replay_receive(body_bytes: bytes):
     return receive
 
 
-class LoggingMiddleware(BaseHTTPMiddleware):
+class LoggingMiddleware:
+    def __init__(self, logger:Logger):
+        self.logger = logger
+
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
 
@@ -49,25 +52,25 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             return response
 
         except WouldBlock as e:
-            logger.error(f"WouldBlock error encountered: {e!s}")
+            self.logger.error(f"WouldBlock error encountered: {e!s}")
             return Response(content="Service temporarily unavailable.", status_code=503)
         except JSONDecodeError as e:
             process_time = time.time() - start_time
-            logger.error(f"Error during request - Time taken: {process_time:.4f}s")
-            logger.error(f"Request json is empty. Details: {e!s}")
+            self.logger.error(f"Error during request - Time taken: {process_time:.4f}s")
+            self.logger.error(f"Request json is empty. Details: {e!s}")
             raise
 
         except Exception as e:
             process_time = time.time() - start_time
 
-            logger.error(f"Error during request - Time taken: {process_time:.4f}s")
-            logger.error(f"Error details: {e}")
-            logger.error("-------------------------")
+            self.logger.error(f"Error during request - Time taken: {process_time:.4f}s")
+            self.logger.error(f"Error details: {e}")
+            self.logger.error("-------------------------")
 
             raise
 
 
-async def log_request_response(request: Request, response, res_body, req_body, start_time: float):
+async def log_request_response(request: Request, response, res_body, req_body, start_time: float, logger:Logger):
     """Background task to log request and response details."""
     process_time = time.time() - start_time
 

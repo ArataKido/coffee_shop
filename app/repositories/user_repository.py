@@ -9,7 +9,7 @@ from app.repositories.base_repository import BaseRepository
 class UserRepository(BaseRepository):
     """Repository for user operations."""
 
-    def __init__(self, db: AsyncSession | Session):
+    def __init__(self, db: AsyncSession ):
         super().__init__(db, UserModel)
 
     def get_all_admins_sync(self) -> list[UserModel]:

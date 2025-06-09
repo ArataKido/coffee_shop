@@ -1,6 +1,6 @@
 import threading
 
-from app.config import settings
+from app.config import AppConfig
 from app.utils.loggers.console_destination import ConsoleLogDestination
 from app.utils.loggers.file_destination import FileLogDestination
 
@@ -24,15 +24,17 @@ class SingletonMeta(type):
 
 
 class Logger(metaclass=SingletonMeta):
-    def __init__(self):
+
+    def __init__(self, app_config:AppConfig):
         self.destinations = []
-        log_destinations = settings.log_destinations.split(",")
+
+        log_destinations = app_config.log_destinations.split(",")
 
         if "console" in log_destinations:
             self.destinations.append(ConsoleLogDestination())
 
         if "file" in log_destinations:
-            self.destinations.append(FileLogDestination(settings.log_file_path))
+            self.destinations.append(FileLogDestination(app_config.log_file_path))
 
         self.initialized = True
 

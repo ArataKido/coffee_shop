@@ -2,7 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from fastapi_pagination.utils import disable_installed_extensions_check
+from starlette.middleware.base import BaseHTTPMiddleware
+from dishka.integrations.fastapi import setup_dishka
 
+from app.dependencies.container import create_container
 from app.middleware.logging_middleware import LoggingMiddleware  # noqa: F401
 from app.routers import auth, cart, categories, orders, products, users
 
@@ -22,8 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.add_middleware(LoggingMiddleware)  # noqa: ERA001
-
 # Include routers
 app.include_router(categories.router)
 app.include_router(products.router)
@@ -32,5 +33,8 @@ app.include_router(cart.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 
+setup_dishka(container=create_container(), app=app)
+app.add_middleware(BaseHTTPMiddleware, dispatch=LoggingMiddleware)  # noqa: ERA001
 add_pagination(app)
 disable_installed_extensions_check()
+
