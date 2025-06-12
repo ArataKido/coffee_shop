@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.config import settings  # Import your settings
+from app.config import Config  # Import your settings
 from app.models.base import BaseModel  # Import your Base model
 
 # this is the Alembic Config object, which provides
@@ -15,8 +15,7 @@ for table in BaseModel.metadata.tables:
     print(f" - {table}")
 
 # Преобразуем асинхронный URL в синхронный для Alembic
-sync_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
-config.set_main_option("sqlalchemy.url", sync_url)
+# config.set_main_option("sqlalchemy.url", sync_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
