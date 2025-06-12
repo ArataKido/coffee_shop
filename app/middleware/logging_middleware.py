@@ -1,4 +1,3 @@
-import json
 from json.decoder import JSONDecodeError
 import time
 
@@ -7,12 +6,13 @@ from fastapi import Request, Response
 from fastapi.concurrency import iterate_in_threadpool
 from starlette.background import BackgroundTask
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
-from app.utils.loggers.logger import Logger
+from app.config import Config
+from app.dependencies.providers.service_provider import ServiceProvider
 
-# self.logger = self.Logger()
 
+config = Config()
+logger = ServiceProvider().get_logger(config)
 
 def get_replay_receive(body_bytes: bytes):
     """Return an ASGI receive() that replays body_bytes once, then empties."""
@@ -30,47 +30,74 @@ def get_replay_receive(body_bytes: bytes):
     return receive
 
 
-class LoggingMiddleware:
-    def __init__(self, logger:Logger):
-        self.logger = logger
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+
 
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
-
         try:
-            req_body = await request.json() if request.method in ("POST", "PUT", "PATCH") else None
+            req_body_bytes = await request.body()  # Read the raw body bytes
+
+            # Save the body for logging
+            req_body = None
+            content_type = request.headers.get("content-type", "")
+            if request.method in ("POST", "PUT", "PATCH"):
+                if "application/x-www-form-urlencoded" in content_type:
+                    from starlette.datastructures import FormData
+                    # Parse form data from bytes
+                    from urllib.parse import parse_qs
+                    parsed = parse_qs(req_body_bytes.decode())
+                    req_body = dict((k, v[0] if len(v) == 1 else v) for k, v in parsed.items())
+                elif "application/json" in content_type:
+                    import json
+                    try:
+                        req_body = json.loads(req_body_bytes)
+                    except Exception:
+                        req_body = None
+
+            # Patch the request stream so downstream can read it again
+            async def receive():
+                return {"type": "http.request", "body": req_body_bytes, "more_body": False}
+            request._receive = receive
+
             response = await call_next(request)
             res_body = [section async for section in response.body_iterator]
             response.body_iterator = iterate_in_threadpool(iter(res_body))
             if res_body:
                 res_body = res_body[0].decode()
 
-            response.background = BackgroundTask(
+            task = BackgroundTask(
                 log_request_response, request, response, res_body, req_body, start_time
             )
 
-            return response
-
+            return Response(
+                content=res_body,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type,
+                background=task,
+            )
         except WouldBlock as e:
-            self.logger.error(f"WouldBlock error encountered: {e!s}")
+            logger.exception(f"WouldBlock error encountered: {e!s}")
             return Response(content="Service temporarily unavailable.", status_code=503)
         except JSONDecodeError as e:
             process_time = time.time() - start_time
-            self.logger.error(f"Error during request - Time taken: {process_time:.4f}s")
-            self.logger.error(f"Request json is empty. Details: {e!s}")
+            logger.exception(f"Error during request - Time taken: {process_time:.4f}s")
+            logger.exception(f"Request json is empty. Details: {e!s}")
             raise
 
         except Exception as e:
             process_time = time.time() - start_time
 
-            self.logger.error(f"Error during request - Time taken: {process_time:.4f}s")
-            self.logger.error(f"Error details: {e}")
-            self.logger.error("-------------------------")
+            logger.exception(f"Error during request - Time taken: {process_time:.4f}s")
+            logger.exception(f"Error details: {e}")
+            logger.exception("-------------------------")
 
             raise
 
 
-async def log_request_response(request: Request, response, res_body, req_body, start_time: float, logger:Logger):
+async def log_request_response(request: Request, response, res_body, req_body, start_time: float):
     """Background task to log request and response details."""
     process_time = time.time() - start_time
 
