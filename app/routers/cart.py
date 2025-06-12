@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 from app.dependencies.auth_dependencies import get_current_active_user
-from app.dependencies.dependencies import get_cart_service
 from app.schemas.cart_schema import CartDetail, CartProductCreate, CartItemUpdate
 from app.services.cart_service import CartService
 from app.schemas.user_schema import UserSchema

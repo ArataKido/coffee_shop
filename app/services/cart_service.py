@@ -8,6 +8,7 @@ from app.utils.loggers.logger import Logger
 
 
 class CartService:
+
     def __init__(self, db: AsyncSession, cart_repository: CartRepository, product_repository: ProductRepository, logger:Logger):
         self.db = db
         self.cart_repo = cart_repository

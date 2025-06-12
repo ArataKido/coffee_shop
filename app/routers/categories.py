@@ -1,8 +1,6 @@
 from app.dependencies.auth_dependencies import user_is_admin
-from app.dependencies.dependencies import get_category_service
 from app.schemas.category_schema import CategoryCreate, CategoryInDB, CategoryUpdate
 from app.services.category_service import CategoryService
-from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_pagination import Page, paginate
 from dishka.integrations.fastapi import FromDishka, DishkaRoute

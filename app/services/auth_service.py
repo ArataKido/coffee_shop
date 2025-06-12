@@ -1,9 +1,8 @@
 from fastapi import HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 from datetime import UTC, datetime, timedelta
 
-from app.config import AppConfig
+from app.config import Config
 from app.schemas.token_schema import Token
 from app.schemas.user_schema import UserCreateSchema, UserSchema
 from app.services.user_service import UserService
@@ -13,13 +12,11 @@ from app.utils.loggers.logger import Logger
 
 
 class AuthService:
-    oauth2_scheme: OAuth2PasswordBearer
 
-    def __init__(self, user_service: UserService, oauth_scheme: OAuth2PasswordBearer, logger:Logger, app_config:AppConfig):
+    def __init__(self, user_service: UserService, logger:Logger, app_config:Config):
         self.user_service = user_service
-        self.oauth2_scheme = oauth_scheme
         self.logger = logger
-        self.app_config = app_config
+        self.app_config = app_config.app
 
 
     async def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:

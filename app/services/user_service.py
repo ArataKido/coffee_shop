@@ -3,7 +3,7 @@ from base64 import b64decode, b64encode
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.config import AppConfig
+from app.config import Config
 from app.repositories.user_repository import UserRepository
 from app.schemas.user_schema import UserCreateSchema, UserSchema, UserUpdateSchema, UserWithPassword
 from app.utils.security import get_password_hash
@@ -18,11 +18,11 @@ class UserService:
     This demonstrates the proper way to use repositories in a layered architecture.
     """
 
-    def __init__(self, db: AsyncSession , user_repository: UserRepository, logger:Logger, app_config:AppConfig):
+    def __init__(self, db: AsyncSession , user_repository: UserRepository, logger:Logger, config:Config):
         self.db = db
         self.user_repo = user_repository
         self.logger = logger
-        self.config = app_config
+        self.config = config.app
 
     async def get_user_by_id(self, user_id: int) -> UserSchema | None:
         """Get a user by their ID."""
@@ -204,7 +204,7 @@ class UserService:
         token = await self._generate_verification_token(user_id)
         send_verification_email_task.apply_async(args=[user_email, token])
 
-        check_user_status_task.apply_async(args=[user_id], countdown=AppConfig.user_delete_timeout)
+        check_user_status_task.apply_async(args=[user_id], countdown=self.config.user_delete_timeout)
 
     async def is_user_active(self, user_id: int) -> bool:
         user = await self.get_user_by_id(user_id)

@@ -3,7 +3,6 @@ from fastapi_pagination import Page, paginate
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 from app.dependencies.auth_dependencies import get_current_active_user
-from app.dependencies.dependencies import get_order_service
 from app.models.order import OrderStatus
 from app.schemas.order_schema import OrderCreate, OrderDetail, OrderInDB, OrderUpdate
 from app.schemas.user_schema import UserSchema

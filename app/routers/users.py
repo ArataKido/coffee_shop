@@ -3,7 +3,6 @@ from fastapi_pagination import Page, paginate
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 from app.dependencies.auth_dependencies import get_current_active_user, user_is_admin
-from app.dependencies.dependencies import get_user_service
 from app.schemas.user_schema import UserSchema, UserUpdateSchema
 from app.services.user_service import UserService
 

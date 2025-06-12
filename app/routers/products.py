@@ -3,7 +3,6 @@ from fastapi_pagination import Page, paginate
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 from app.dependencies.auth_dependencies import user_is_admin
-from app.dependencies.dependencies import get_product_service
 from app.schemas.product_schema import ProductCreate, ProductDetail, ProductInDB, ProductUpdate
 from app.services.product_service import ProductService
 
