@@ -1,6 +1,6 @@
 from dishka import AsyncContainer, make_async_container
 
-from app.config import Config, PostgresConfig
+from app.config import Config
 from app.dependencies.providers import (
     conn_provider, repo_provider, service_provider
 )

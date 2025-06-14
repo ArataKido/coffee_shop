@@ -46,7 +46,6 @@ async def add_product_to_cart(
 
     Parameters
     ----------
-        - user_id: users id, used for fetching and adding items to the cart
         - cart_service: Cart service used for getting cart information
 
     Returns
@@ -74,7 +73,6 @@ async def update_cart_product(
 
     Parameters
     ----------
-        - user_id: users id, used for fetching and adding items to the cart
         - product_id: product_id, used for fetching and adding items to the cart
         - item_data: Hold information regarding update information
         - cart_service: Cart service used for getting cart information
@@ -101,7 +99,6 @@ async def remove_cart_product(
 
     Parameters
     ----------
-        - user_id: users id, used for fetching and adding items to the cart
         - product_id: product_id, used for fetching product
         - cart_service: Cart service used for getting cart information
 

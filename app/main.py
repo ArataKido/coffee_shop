@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from fastapi_pagination.utils import disable_installed_extensions_check
 from dishka.integrations.fastapi import setup_dishka
-from fastapi_swagger_dark import get_swagger_ui_html
 
 from app.dependencies.container import create_container
 from app.middleware.logging_middleware import LoggingMiddleware  # noqa: F401
@@ -27,7 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+
+    # Include routers
 app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(orders.router)

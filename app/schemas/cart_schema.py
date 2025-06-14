@@ -26,7 +26,6 @@ class CartProductBase(BaseModel):
 
 class CartDetail(BaseModel):
     id: int
-    user_id: int
     cart_products: list[CartProductBase] = []
 
     class Config:
