@@ -1,16 +1,16 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.category_repository import CategoryRepository
-from app.schemas.category import CategoryCreate, CategoryInDB, CategoryUpdate
+from app.schemas.category_schema import CategoryCreate, CategoryInDB, CategoryUpdate
 from app.utils.loggers.logger import Logger
 
-logger = Logger()
 
 
 class CategoryService:
-    def __init__(self, db: AsyncSession, category_repository: CategoryRepository):
+    def __init__(self, db: AsyncSession, category_repository: CategoryRepository, logger:Logger):
         self.db = db
         self.category_repo = category_repository
+        self.logger = logger
 
     async def get_category_by_id(self, category_id: int) -> CategoryInDB | None:
         """Get category by ID"""
@@ -18,7 +18,7 @@ class CategoryService:
             category = await self.category_repo.find_by_id(category_id)
             return CategoryInDB.model_validate(category) if category else None
         except Exception as e:
-            logger.exception(f"Error getting category by ID {category_id}: {e!s}")
+            self.logger.exception(f"Error getting category by ID {category_id}: {e!s}")
             return None
 
     async def get_all_categories(self) -> list[CategoryInDB]:
@@ -27,7 +27,7 @@ class CategoryService:
             categories = await self.category_repo.get_all()
             return [CategoryInDB.model_validate(cat) for cat in categories]
         except Exception as e:
-            logger.exception(f"Error getting all categories: {e!s}")
+            self.logger.exception(f"Error getting all categories: {e!s}")
             return []
 
     async def create_category(
@@ -38,7 +38,7 @@ class CategoryService:
             # Check if category with the same name already exists
             existing_category = await self.category_repo.find_by(name=category_data.name, is_active=True)
             if existing_category:
-                logger.warning(f"Category with name {category_data.name} already exists")
+                self.logger.warning(f"Category with name {category_data.name} already exists")
                 return None
 
             # Create category
@@ -47,7 +47,7 @@ class CategoryService:
             created_category = await self.category_repo.add_and_commit(category, created_by_user_id=creator_id)
             return CategoryInDB.model_validate(created_category)
         except Exception as e:
-            logger.exception(f"Error creating category: {e!s}")
+            self.logger.exception(f"Error creating category: {e!s}")
             await self.db.rollback()
             return None
 
@@ -59,7 +59,7 @@ class CategoryService:
             # Get existing category
             category = await self.category_repo.find_by_id(category_id)
             if not category:
-                logger.warning(f"Category with ID {category_id} not found")
+                self.logger.warning(f"Category with ID {category_id} not found")
                 return None
 
             # Update fields if provided
@@ -75,7 +75,7 @@ class CategoryService:
             await self.db.commit()
             return CategoryInDB.model_validate(category)
         except Exception as e:
-            logger.exception(f"Error updating category {category_id}: {e!s}")
+            self.logger.exception(f"Error updating category {category_id}: {e!s}")
             await self.db.rollback()
             return None
 
@@ -85,7 +85,7 @@ class CategoryService:
             # Get existing category
             category = await self.category_repo.find_by(id=category_id)
             if not category:
-                logger.warning(f"Category with ID {category_id} not found")
+                self.logger.warning(f"Category with ID {category_id} not found")
                 return False
 
             # Soft delete
@@ -93,6 +93,6 @@ class CategoryService:
             await self.db.commit()
             return True
         except Exception as e:
-            logger.exception(f"Error deleting category {category_id}: {e!s}")
+            self.logger.exception(f"Error deleting category {category_id}: {e!s}")
             await self.db.rollback()
             return False

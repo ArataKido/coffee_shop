@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.schemas.product import ProductInDB
+from app.schemas.product_schema import ProductInDB
 
 
 class CartBase(BaseModel):
@@ -26,7 +26,6 @@ class CartProductBase(BaseModel):
 
 class CartDetail(BaseModel):
     id: int
-    user_id: int
     cart_products: list[CartProductBase] = []
 
     class Config:

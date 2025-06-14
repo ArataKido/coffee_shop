@@ -4,18 +4,18 @@ from app.models.order import OrderStatus
 from app.models.order_item import OrderItem
 from app.repositories.order_repository import OrderRepository
 from app.repositories.product_repository import ProductRepository
-from app.schemas.order import OrderCreate, OrderDetail, OrderInDB, OrderUpdate
+from app.schemas.order_schema import OrderCreate, OrderDetail, OrderInDB, OrderUpdate
 from app.utils.tasks import send_admin_order_notification
 from app.utils.loggers.logger import Logger
 
-logger = Logger()
 
 
 class OrderService:
-    def __init__(self, db: AsyncSession, order_repository: OrderRepository, product_repository: ProductRepository):
+    def __init__(self, db: AsyncSession, order_repository: OrderRepository, product_repository: ProductRepository, logger:Logger):
         self.db = db
         self.order_repo = order_repository
         self.product_repo = product_repository
+        self.logger = logger
 
     async def get_order_by_id(self, order_id: int) -> OrderDetail | None:
         """Get order by ID with items"""
@@ -26,7 +26,7 @@ class OrderService:
 
             return OrderDetail.model_validate(order)
         except Exception as e:
-            logger.exception(f"Error getting order by ID {order_id}: {e!s}")
+            self.logger.exception(f"Error getting order by ID {order_id}: {e!s}")
             return None
 
     async def get_all_orders(self) -> list[OrderInDB]:
@@ -35,7 +35,7 @@ class OrderService:
             orders = await self.order_repo.find_all()
             return [OrderInDB.model_validate(order) for order in orders]
         except Exception as e:
-            logger.exception(f"Error getting all orders: {e!s}")
+            self.logger.exception(f"Error getting all orders: {e!s}")
             return []
 
     async def get_user_orders(self, user_id: int, order_status: OrderStatus = None) -> list[OrderInDB]:
@@ -44,7 +44,7 @@ class OrderService:
             orders = await self.order_repo.find_all_by(user_id=user_id, status=order_status)
             return [OrderInDB.model_validate(order) for order in orders]
         except Exception as e:
-            logger.exception(f"Error getting orders for user {user_id}: {e!s}")
+            self.logger.exception(f"Error getting orders for user {user_id}: {e!s}")
             return []
 
     async def create_order(self, order_data: OrderCreate, creator_id: int | None = None) -> OrderDetail | None:
@@ -68,7 +68,7 @@ class OrderService:
             for item_data in order_data.items:
                 product = await self.product_repo.find_by_id(item_data.product_id)
                 if not product or not product.is_active:
-                    logger.warning(f"Product {item_data.product_id} not found or inactive")
+                    self.logger.warning(f"Product {item_data.product_id} not found or inactive")
                     await self.db.rollback()
                     return None
 
@@ -96,7 +96,7 @@ class OrderService:
             # Get complete order with items
             return await self.get_order_by_id(created_order.id)
         except Exception as e:
-            logger.exception(f"Error creating order: {e!s}")
+            self.logger.exception(f"Error creating order: {e!s}")
             await self.db.rollback()
             return None
 
@@ -108,7 +108,7 @@ class OrderService:
             # Get existing order
             order = await self.order_repo.find_by_id(order_id)
             if not order:
-                logger.warning(f"Order with ID {order_id} not found")
+                self.logger.warning(f"Order with ID {order_id} not found")
                 return None
 
             # Update status if provided
@@ -120,7 +120,7 @@ class OrderService:
             await self.db.commit()
             return OrderInDB.model_validate(order)
         except Exception as e:
-            logger.exception(f"Error updating order {order_id}: {e!s}")
+            self.logger.exception(f"Error updating order {order_id}: {e!s}")
             await self.db.rollback()
             return None
 
@@ -130,12 +130,12 @@ class OrderService:
             # Get existing order
             order = await self.order_repo.find_by_id(order_id)
             if not order:
-                logger.warning(f"Order with ID {order_id} not found")
+                self.logger.warning(f"Order with ID {order_id} not found")
                 return False
 
             # Only allow cancellation for pending or processing orders
             if order.status not in [OrderStatus.PENDING, OrderStatus.PROCESSING]:
-                logger.warning(f"Cannot cancel order {order_id} with status {order.status}")
+                self.logger.warning(f"Cannot cancel order {order_id} with status {order.status}")
                 return False
 
             # Set status to CANCELLED
@@ -147,6 +147,6 @@ class OrderService:
             await self.db.commit()
             return True
         except Exception as e:
-            logger.exception(f"Error cancelling order {order_id}: {e!s}")
+            self.logger.exception(f"Error cancelling order {order_id}: {e!s}")
             await self.db.rollback()
             return False

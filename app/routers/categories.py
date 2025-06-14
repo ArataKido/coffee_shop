@@ -1,22 +1,22 @@
 from app.dependencies.auth_dependencies import user_is_admin
-from app.dependencies.dependencies import get_category_service
-from app.schemas.category import CategoryCreate, CategoryInDB, CategoryUpdate
+from app.schemas.category_schema import CategoryCreate, CategoryInDB, CategoryUpdate
 from app.services.category_service import CategoryService
-from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_pagination import Page, paginate
+from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 router = APIRouter(
     prefix="/categories",
     tags=["categories"],
     responses={404: {"description": "Not found"}},
+    route_class=DishkaRoute
 )
 
 
 @router.post("/", response_model=CategoryInDB, status_code=status.HTTP_201_CREATED)
 async def create_category(
     category: CategoryCreate,
-    category_service: Annotated[CategoryService, Depends(get_category_service)],
+    category_service: FromDishka[CategoryService],
     user=Depends(user_is_admin),
 ):
     """Create a new category"""
@@ -29,14 +29,14 @@ async def create_category(
 
 
 @router.get("/", response_model=Page[CategoryInDB])
-async def read_categories(category_service: Annotated[CategoryService, Depends(get_category_service)]):
+async def read_categories(category_service: FromDishka[CategoryService]):
     """Get all categories"""
     categories = await category_service.get_all_categories()
     return paginate(categories)
 
 
 @router.get("/{category_id}", response_model=CategoryInDB)
-async def read_category(category_id: int, category_service: Annotated[CategoryService, Depends(get_category_service)]):
+async def read_category(category_id: int, category_service: FromDishka[CategoryService]):
     """Get a category by ID"""
     category = await category_service.get_category_by_id(category_id)
     if not category:
@@ -48,7 +48,7 @@ async def read_category(category_id: int, category_service: Annotated[CategorySe
 async def update_category(
     category_id: int,
     category: CategoryUpdate,
-    category_service: Annotated[CategoryService, Depends(get_category_service)],
+    category_service: FromDishka[CategoryService],
     user=Depends(user_is_admin),
 ):
     """Update a category"""
@@ -61,7 +61,7 @@ async def update_category(
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
     category_id: int,
-    category_service: Annotated[CategoryService, Depends(get_category_service)],
+    category_service: FromDishka[CategoryService],
     user=Depends(user_is_admin),
 ):
     """Soft deletes a category"""

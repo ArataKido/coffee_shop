@@ -2,18 +2,20 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from app.config import settings
+from app.config import Config
+
 
 
 class EmailService:
-    def __init__(self):
+    def __init__(self, config:Config):
         """Initialize EmailService with configuration from settings"""
-        self.smtp_server = settings.smtp_server
-        self.smtp_port = settings.smtp_port
-        self.smtp_username = settings.smtp_username
-        self.smtp_password = settings.smtp_password
-        self.sender_email = settings.sender_email
-        self.verification_url = settings.verification_base_url
+        self.settings = config.smtp
+        self.smtp_server = self.settings.smtp_server
+        self.smtp_port = self.settings.smtp_port
+        self.smtp_username = self.settings.smtp_username
+        self.smtp_password = self.settings.smtp_password
+        self.sender_email = self.settings.sender_email
+        self.verification_url = self.settings.verification_base_url
 
     def get_smtp(self):
         try:

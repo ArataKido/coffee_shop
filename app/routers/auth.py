@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security, Depends
 from fastapi.security import OAuth2PasswordRequestForm
+from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
-from app.dependencies.auth_dependencies import get_auth_service
-from app.schemas.token import Token
-from app.schemas.user import UserCreateSchema, UserSchema
+from app.schemas.token_schema import Token
+from app.schemas.user_schema import UserCreateSchema, UserSchema
 from app.services.auth_service import AuthService
 from app.utils.security import oauth2_scheme
 
@@ -11,11 +11,12 @@ router = APIRouter(
     prefix="/auth",
     tags=["auth"],
     responses={404: {"description": "Not found"}},
+    route_class=DishkaRoute
 )
 
 
 @router.post("/signup", response_model=UserSchema)
-async def signup(user: UserCreateSchema, auth_service: AuthService = Depends(get_auth_service)):
+async def signup(user: UserCreateSchema, auth_service: FromDishka[AuthService]):
     """
     Route for signing up the user.
 
@@ -34,8 +35,8 @@ async def signup(user: UserCreateSchema, auth_service: AuthService = Depends(get
 
 @router.post("/login", response_model=Token)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), auth_service: AuthService = Depends(get_auth_service)
-):
+    auth_service: FromDishka[AuthService],
+    form_data: OAuth2PasswordRequestForm = Depends()):
     """
     Route for signing in the user.
 
@@ -53,7 +54,7 @@ async def login(
 
 
 @router.get("/verify")
-async def verify(activation_code: str, auth_service: AuthService = Depends(get_auth_service)):
+async def verify(activation_code: str, auth_service: FromDishka[AuthService]):
     """
     Route for refreshing JWT token.
 
@@ -71,7 +72,7 @@ async def verify(activation_code: str, auth_service: AuthService = Depends(get_a
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(token: str = Security(oauth2_scheme), auth_service: AuthService = Depends(get_auth_service)):
+async def refresh_token(auth_service: FromDishka[AuthService], token: str = Security(oauth2_scheme)):
     """
     Route for refreshing JWT token.
 

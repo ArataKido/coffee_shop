@@ -1,21 +1,22 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi_pagination import Page, paginate
+from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 from app.dependencies.auth_dependencies import user_is_admin
-from app.dependencies.dependencies import get_product_service
-from app.schemas.product import ProductCreate, ProductDetail, ProductInDB, ProductUpdate
+from app.schemas.product_schema import ProductCreate, ProductDetail, ProductInDB, ProductUpdate
 from app.services.product_service import ProductService
 
 router = APIRouter(
     prefix="/products",
     tags=["products"],
     responses={404: {"description": "Not found"}},
+    route_class=DishkaRoute
 )
 
 
 @router.post("/", response_model=ProductInDB, status_code=status.HTTP_201_CREATED)
 async def create_product(
-    product: ProductCreate, product_service: ProductService = Depends(get_product_service), user=Depends(user_is_admin)
+    product: ProductCreate, product_service: FromDishka[ProductService], user=Depends(user_is_admin)
 ):
     """Create a new product"""
     created_product = await product_service.create_product(product)
@@ -28,10 +29,10 @@ async def create_product(
 
 @router.get("/", response_model=Page[ProductInDB])
 async def read_products(
+    product_service: FromDishka[ProductService],
     category_id: int | None = Query(None, description="Filter by category ID"),
     limit: int | None = Query(None, description="Limit how many products you retrieve "),
     offset: int | None = Query(None),
-    product_service: ProductService = Depends(get_product_service),
 ):
     """Get all products, optionally filtered by category"""
     if category_id:
@@ -43,7 +44,7 @@ async def read_products(
 
 
 @router.get("/{product_id}", response_model=ProductDetail)
-async def read_product(product_id: int, product_service: ProductService = Depends(get_product_service)):
+async def read_product(product_id: int, product_service: FromDishka[ProductService]):
     """Get a product by ID"""
     product = await product_service.get_product_by_id(product_id)
     if not product:
@@ -55,7 +56,7 @@ async def read_product(product_id: int, product_service: ProductService = Depend
 async def update_product(
     product_id: int,
     product: ProductUpdate,
-    product_service: ProductService = Depends(get_product_service),
+    product_service: FromDishka[ProductService],
     user=Depends(user_is_admin),
 ):
     """Update a product"""
@@ -67,7 +68,7 @@ async def update_product(
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
-    product_id: int, product_service: ProductService = Depends(get_product_service), user=Depends(user_is_admin)
+    product_id: int, product_service: FromDishka[ProductService], user=Depends(user_is_admin)
 ):
     """Delete a product"""
     success = await product_service.delete_product(product_id)

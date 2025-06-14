@@ -1,27 +1,23 @@
 from fastapi import HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 from datetime import UTC, datetime, timedelta
 
-from app.config import settings
-from app.schemas.token import Token
-from app.schemas.user import UserCreateSchema, UserSchema
+from app.config import Config
+from app.schemas.token_schema import Token
+from app.schemas.user_schema import UserCreateSchema, UserSchema
 from app.services.user_service import UserService
 from app.utils.security import get_password_hash, verify_password
 from app.utils.loggers.logger import Logger
 
-logger = Logger()
 
 
 class AuthService:
-    ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
-    SECRET_KEY = settings.secret_key
-    ALGORITHM = settings.algorithm
-    oauth2_scheme: OAuth2PasswordBearer
 
-    def __init__(self, user_service: UserService, oauth_scheme: OAuth2PasswordBearer):
+    def __init__(self, user_service: UserService, logger:Logger, app_config:Config):
         self.user_service = user_service
-        self.oauth2_scheme = oauth_scheme
+        self.logger = logger
+        self.app_config = app_config.app
+
 
     async def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
         """
@@ -36,14 +32,14 @@ class AuthService:
 
         """
         to_encode = data.copy()
-        expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES))
+        expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=self.app_config.access_token_expire_minutes))
         to_encode.update({"exp": expire})
-        return jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
+        return jwt.encode(to_encode, self.app_config.secret_key, algorithm=self.app_config.algorithm)
 
     async def decode_access_token(self, token: str) -> dict | None:
         """Decodes the JWT token and returns the payload."""
         try:
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            payload = jwt.decode(token, self.app_config.secret_key, algorithms=[self.app_config.algorithm])
             return payload
         except ExpiredSignatureError:
             raise HTTPException(
@@ -58,7 +54,7 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         except Exception as e:
-            raise logger.error(f"Error while decoding token {token}: {e!s}")
+            raise self.logger.error(f"Error while decoding token {token}: {e!s}")
 
     async def get_user_details_from_token_payload(self, payload: dict) -> UserSchema | None:
         """
@@ -101,7 +97,7 @@ class AuthService:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
             return user
         except Exception as e:
-            logger.exception(f"Error getting user with token {token}: {e!s}")
+            self.logger.exception(f"Error getting user with token {token}: {e!s}")
 
     async def signup(self, user_data: UserCreateSchema) -> UserSchema:
         """
@@ -154,3 +150,4 @@ class AuthService:
 
     async def activate_user(self, verification_token: str):
         return await self.user_service.activate_user(verification_token)
+
