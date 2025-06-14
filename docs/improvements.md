@@ -8,14 +8,6 @@
 
 - This project lacks tests, functionality is slightly big, and it takes time to test everything. Basic unit tests would help this project a lot. Would suggest too make tests, and then start integrating exception handler, and refactor code base.
 
-## Dependencies and Dependency inversion
-
-- I tried to follow all principe of SOLID, but, Dependency inversion principe is hardly flowed. The are no interfaces or any kind of abstraction, this makes code base quite hardly coupled to each other(leading to circular imports), dus making it hard to test and make changes.
-
-- One more suggestion for improvement is to split all dependencies into different module files(ex user_dependencies, order_dependencies.py).
-
-- Also, I do have some doubts regarding the database connection, my plan was to make single reusable connection with multiple sessions, but there is possibility that I made a mistake. Generally I would make a singleton, and get the connection from it.
-
 ## Security
 
 - I was not focused hardly on the security, but I do have a concern regarding placing route for getting all users from database in '/users' since it is easy to mess up. I would prefer making separate router for admin usage.  I would like to note that in update method for users, I left access for field `is_admin`, but this was only for test purposes, and if it is planed to launch it in the production, I would advice to remove it, unless you want users to make admin accounts.
