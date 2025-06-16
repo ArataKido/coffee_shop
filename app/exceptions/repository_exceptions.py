@@ -2,6 +2,7 @@ class RepositoryException(Exception):
     """Base exception for all domain-specific exceptions."""
 
 
+
 class EntityNotFoundException(RepositoryException):
     """Raised when an entity cannot be found."""
 

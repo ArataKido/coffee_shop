@@ -116,14 +116,6 @@ class BaseRepository(Generic[T]):
         await self.db.flush()
         return model
 
-    # Синхронная версия для Celery
-    def update_sync(self, model: T, updated_by_user_id: int | None = None) -> T:
-        """Update an existing model instance (sync version)."""
-        if hasattr(model, "updated_by") and updated_by_user_id is not None:
-            model.updated_by = updated_by_user_id
-
-        self.db.flush()
-        return model
 
     async def update_and_commit(self, model: T, updated_by_user_id: int | None = None) -> T:
         """Update a model instance and commit immediately."""

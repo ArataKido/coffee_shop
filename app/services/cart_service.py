@@ -9,8 +9,7 @@ from app.utils.loggers.logger import Logger
 
 class CartService:
 
-    def __init__(self, db: AsyncSession, cart_repository: CartRepository, product_repository: ProductRepository, logger:Logger):
-        self.db = db
+    def __init__(self, cart_repository: CartRepository, product_repository: ProductRepository, logger:Logger):
         self.cart_repo = cart_repository
         self.product_repo = product_repository
         self.logger = logger
@@ -28,37 +27,19 @@ class CartService:
     async def add_product_to_cart(self, user_id: int, product_data: CartProductCreate) -> CartDetail | None:
         """Add an item to the cart"""
         try:
-            # Check if product exists and is active
             product = await self.product_repo.find_by(id=product_data.product_id, is_active=True)
             if not product or not product.is_active:
                 self.logger.warning(f"Product {product_data.product_id} not found or inactive")
                 return None
 
-            # Check if item already in cart
             cart = await self.cart_repo.find_by(user_id=user_id)
             if not cart:
-                cart = self.cart_repo.create_model(user_id=user_id)
-                await self.cart_repo.add_and_commit(cart)
+                await self.cart_repo.create_cart()
 
-            cart_product = await self.cart_repo.find_product_in_cart(
-                user_id=user_id, product_id=product_data.product_id
-            )
-            if cart_product:
-                # Update quantity
-                cart_product.quantity += product_data.quantity
-                await self.db.commit()
-            else:
-                # Create new cart item
-                cart_item = CartProduct(
-                    cart_id=cart.id, product_id=product_data.product_id, quantity=product_data.quantity
-                )
-                self.db.add(cart_item)
-                await self.db.commit()
-                # Return updated cart
+            await self.cart_repo.add_product_to_cart(cart_id=cart.id, user_id=user_id, product_data=product_data)
             return await self.get_user_cart(user_id)
         except Exception as e:
             self.logger.exception(f"Error adding item to cart for user {user_id}: {e!s}")
-            await self.db.rollback()
             return None
 
     async def update_cart_product(
@@ -72,6 +53,8 @@ class CartService:
                 self.logger.warning(f"Cart item {product_id} not found in user's cart")
                 return None
 
+
+            self.cart_repo.update_cart_product()
             # Update quantity
             if product_data.quantity <= 0:
                 # Remove item if quantity is zero or negative

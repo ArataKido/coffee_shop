@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.order import OrderStatus
-from app.models.order_item import OrderItem
 from app.repositories.order_repository import OrderRepository
 from app.repositories.product_repository import ProductRepository
 from app.schemas.order_schema import OrderCreate, OrderDetail, OrderInDB, OrderUpdate
@@ -50,54 +49,13 @@ class OrderService:
     async def create_order(self, order_data: OrderCreate, creator_id: int | None = None) -> OrderDetail | None:
         """Create a new order with items"""
         try:
+            order = self.order_repo.create_order(order_data=order_data, creator_id=creator_id)
             # Calculate total and validate products
-            total_amount = 0
-            order_items = []
-
-            # Create order
-            order = self.order_repo.create_model(
-                user_id=order_data.user_id,
-                status=OrderStatus.PENDING,
-                total_amount=0,  # Will update after adding items
-            )
-
-            # Save to database to get ID
-            created_order = await self.order_repo.add(order, created_by_user_id=creator_id)
-
-            # Create order items
-            for item_data in order_data.items:
-                product = await self.product_repo.find_by_id(item_data.product_id)
-                if not product or not product.is_active:
-                    self.logger.warning(f"Product {item_data.product_id} not found or inactive")
-                    await self.db.rollback()
-                    return None
-
-                # Create order item
-                order_item = OrderItem(
-                    order_id=created_order.id,
-                    product_id=product.id,
-                    quantity=item_data.quantity,
-                    unit_price=product.price,
-                )
-
-                # Add to DB
-                self.db.add(order_item)
-                order_items.append(order_item)
-
-                # Update total
-                total_amount += order_item.quantity * product.price
-
-            # Update order total
-            created_order.total_amount = total_amount
-
-            # Commit transaction
-            await self.db.commit()
-            send_admin_order_notification.apply_async(args=[order.user_id, created_order.id])
+            send_admin_order_notification.apply_async(args=[order.user_id, order.id])
             # Get complete order with items
-            return await self.get_order_by_id(created_order.id)
+            return await self.get_order_by_id(order.id)
         except Exception as e:
             self.logger.exception(f"Error creating order: {e!s}")
-            await self.db.rollback()
             return None
 
     async def update_order_status(
@@ -116,12 +74,10 @@ class OrderService:
                 order.status = order_data.status
 
             # Update in database
-            await self.order_repo.update(order, updated_by_user_id=updater_id)
-            await self.db.commit()
+            await self.order_repo.update_and_commit(order, updated_by_user_id=updater_id)
             return OrderInDB.model_validate(order)
         except Exception as e:
             self.logger.exception(f"Error updating order {order_id}: {e!s}")
-            await self.db.rollback()
             return None
 
     async def delete_order(self, order_id: int, updater_id: int | None = None) -> bool:
@@ -138,15 +94,8 @@ class OrderService:
                 self.logger.warning(f"Cannot cancel order {order_id} with status {order.status}")
                 return False
 
-            # Set status to CANCELLED
-            order.status = OrderStatus.CANCELLED
-
-            # Update in database
-            await self.order_repo.update(order, updated_by_user_id=updater_id)
-            await self.order_repo.soft_delete(order, deleted_by_user_id=updater_id)
-            await self.db.commit()
+            self.order_repo.delete_order(order=order, updater_id=updater_id)
             return True
         except Exception as e:
             self.logger.exception(f"Error cancelling order {order_id}: {e!s}")
-            await self.db.rollback()
             return False
