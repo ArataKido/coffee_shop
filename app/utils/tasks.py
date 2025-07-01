@@ -43,8 +43,8 @@ def check_user_status_task(user_id: int):
             user_service.delete_user_sync(user_id)
             return "deleted"
         return "not deleted"
-    except Exception as e:
-        logger.exception(f"Error getting user by ID {user_id}: {e!s}")
+    except Exception:
+        logger.exception(f"Error getting user by ID {user_id}")
         return None
 
 
@@ -63,6 +63,6 @@ def send_admin_order_notification(user_id: int, order_id: int):
 
         admin_emails = user_service.get_admin_emails_sync()
         email_service.send_batch_order_notification_sync(admin_emails=admin_emails, user_id=user_id, order_id=order_id)
-    except Exception as e:
-        logger.exception(f"Error getting user by ID {user_id}: {e!s}")
+    except Exception:
+        logger.exception(f"Error getting user by ID {user_id}")
         return
