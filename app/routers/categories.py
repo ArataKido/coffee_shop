@@ -6,10 +6,7 @@ from fastapi_pagination import Page, paginate
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 router = APIRouter(
-    prefix="/categories",
-    tags=["categories"],
-    responses={404: {"description": "Not found"}},
-    route_class=DishkaRoute
+    prefix="/categories", tags=["categories"], responses={404: {"description": "Not found"}}, route_class=DishkaRoute
 )
 
 
@@ -32,6 +29,8 @@ async def create_category(
 async def read_categories(category_service: FromDishka[CategoryService]):
     """Get all categories"""
     categories = await category_service.get_all_categories()
+    if not categories:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categories were not found")
     return paginate(categories)
 
 

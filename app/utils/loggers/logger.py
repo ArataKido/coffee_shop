@@ -24,8 +24,7 @@ class SingletonMeta(type):
 
 
 class Logger(metaclass=SingletonMeta):
-
-    def __init__(self, app_config:AppConfig):
+    def __init__(self, app_config: AppConfig):
         self.destinations = []
 
         log_destinations = app_config.log_destinations.split(",")

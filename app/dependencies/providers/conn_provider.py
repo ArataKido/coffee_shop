@@ -1,9 +1,10 @@
 from dishka import from_context, provide, Provider, Scope
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 from app.config import Config
 from app.db import new_session_maker
+
 
 class ConnectionProvider(Provider):
     config = from_context(provides=Config, scope=Scope.APP)

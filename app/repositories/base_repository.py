@@ -85,7 +85,7 @@ class BaseRepository(Generic[T]):
         result = self.db.execute(sync_select(self.model_class).filter(*filters))
         return result.scalar_one_or_none()
 
-    def create_model(self, **data) -> T:
+    def _create_model(self, **data) -> T:
         """
         Factory method to create a model instance without saving to the database.
         This keeps model creation logic centralized and consistent.
@@ -112,17 +112,7 @@ class BaseRepository(Generic[T]):
         """Update an existing model instance."""
         if hasattr(model, "updated_by") and updated_by_user_id is not None:
             model.updated_by = updated_by_user_id
-
         await self.db.flush()
-        return model
-
-    # Синхронная версия для Celery
-    def update_sync(self, model: T, updated_by_user_id: int | None = None) -> T:
-        """Update an existing model instance (sync version)."""
-        if hasattr(model, "updated_by") and updated_by_user_id is not None:
-            model.updated_by = updated_by_user_id
-
-        self.db.flush()
         return model
 
     async def update_and_commit(self, model: T, updated_by_user_id: int | None = None) -> T:
@@ -136,34 +126,43 @@ class BaseRepository(Generic[T]):
         """Soft delete a model by setting is_active to False."""
         if hasattr(model, "is_active"):
             model.is_active = False
-            return await self.update(model, updated_by_user_id=deleted_by_user_id)
+            return await self.update_and_commit(model, updated_by_user_id=deleted_by_user_id)
         return model
 
     async def activate(self, model: T, deleted_by_user_id: int | None = None) -> T:
         """Activating model by setting is_active to True."""
-        if hasattr(model, "is_active"):
-            model.is_active = True
-            return await self.update(model, updated_by_user_id=deleted_by_user_id)
-        return model
-
+        try:
+            if hasattr(model, "is_active"):
+                model.is_active = True
+                return await self.update_and_commit(model, updated_by_user_id=deleted_by_user_id)
+            return model
+        except Exception:
+            await self.db.rollback()
+            self.logger.exception(f"Error accured while activating {self.model} with id {model.id}")
     async def permanent_delete(self, model_id: int) -> None:
         """Permanently delete a model by ID from the database."""
-        model = await self.find_by_id(model_id)
-        if model:
-            await self.db.delete(model)
-            await self.db.flush()
-
+        try:
+            model = await self.find_by_id(model_id)
+            if model:
+                await self.db.delete(model)
+                await self.db.commit()
+        except Exception:
+            self.logger.exception(f"Error deleting {self.model_class} with id {model_id}")
+            await self.db.rollback()
     # Синхронная версия для Celery
     def permanent_delete_sync(self, model_id: int) -> None:
         """Permanently delete a model by ID from the database (sync version)."""
-        model = self.find_by_sync(id=model_id)
-        if model:
-            self.db.delete(model)
-            self.db.flush()
-
+        try:
+            model = self.find_by_sync(id=model_id)
+            if model:
+                self.db.delete(model)
+                self.db.commit()
+        except Exception:
+            self.logger.exception(f"Error deleting {self.model_class} with id {model_id}")
+            self.db.rollback()
     async def bulk_create(self, models: list[dict[str, Any]], created_by_user_id: int | None = None) -> list[T]:
         """Create multiple model instances at once."""
-        instances = [self.create_model(**data) for data in models]
+        instances = [self._create_model(**data) for data in models]
 
         if created_by_user_id is not None:
             for instance in instances:

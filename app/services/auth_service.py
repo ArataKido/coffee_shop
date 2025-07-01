@@ -1,7 +1,6 @@
 from fastapi import HTTPException, status
 from jose import ExpiredSignatureError, JWTError, jwt
 from datetime import UTC, datetime, timedelta
-
 from app.config import Config
 from app.schemas.token_schema import Token
 from app.schemas.user_schema import UserCreateSchema, UserSchema
@@ -9,15 +8,11 @@ from app.services.user_service import UserService
 from app.utils.security import get_password_hash, verify_password
 from app.utils.loggers.logger import Logger
 
-
-
 class AuthService:
-
-    def __init__(self, user_service: UserService, logger:Logger, app_config:Config):
+    def __init__(self, user_service: UserService, logger: Logger, app_config: Config):
         self.user_service = user_service
         self.logger = logger
         self.app_config = app_config.app
-
 
     async def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
         """
@@ -41,20 +36,20 @@ class AuthService:
         try:
             payload = jwt.decode(token, self.app_config.secret_key, algorithms=[self.app_config.algorithm])
             return payload
-        except ExpiredSignatureError:
+        except ExpiredSignatureError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired",
                 headers={"WWW-Authenticate": "Bearer"},
-            )
-        except JWTError:
+            ) from e
+        except JWTError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials (JWT error)",
                 headers={"WWW-Authenticate": "Bearer"},
-            )
+            ) from e
         except Exception as e:
-            raise self.logger.error(f"Error while decoding token {token}: {e!s}")
+            raise self.logger.exception(f"Error while decoding token {token}") from e
 
     async def get_user_details_from_token_payload(self, payload: dict) -> UserSchema | None:
         """
@@ -84,20 +79,17 @@ class AuthService:
             UserSchema: contains user information
 
         """
-        try:
-            payload = await self.decode_access_token(token)
-            if not payload:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+        payload = await self.decode_access_token(token)
+        if not payload:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
-            user = await self.get_user_details_from_token_payload(payload)
-            if user is None:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        user = await self.get_user_details_from_token_payload(payload)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-            if not getattr(user, "is_active", True):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
-            return user
-        except Exception as e:
-            self.logger.exception(f"Error getting user with token {token}: {e!s}")
+        if not getattr(user, "is_active", True):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+        return user
 
     async def signup(self, user_data: UserCreateSchema) -> UserSchema:
         """
@@ -150,4 +142,3 @@ class AuthService:
 
     async def activate_user(self, verification_token: str):
         return await self.user_service.activate_user(verification_token)
-
