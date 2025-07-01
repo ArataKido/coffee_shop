@@ -27,11 +27,8 @@ class OrderItemInDB(OrderItemBase):
         from_attributes = True
 
 
-class OrderBase(BaseModel):
-    user_id: int
 
-
-class OrderCreate(OrderBase):
+class OrderCreate(BaseModel):
     items: list[OrderItemCreate]
 
 
@@ -39,8 +36,9 @@ class OrderUpdate(BaseModel):
     status: OrderStatus | None = None
 
 
-class OrderInDB(OrderBase):
+class OrderInDB(BaseModel):
     id: int
+    user_id:int
     status: OrderStatus
     total_amount: float
     created_at: datetime
