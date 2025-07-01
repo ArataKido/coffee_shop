@@ -8,10 +8,7 @@ from app.services.auth_service import AuthService
 from app.utils.security import oauth2_scheme
 
 router = APIRouter(
-    prefix="/auth",
-    tags=["auth"],
-    responses={404: {"description": "Not found"}},
-    route_class=DishkaRoute
+    prefix="/auth", tags=["auth"], responses={404: {"description": "Not found"}}, route_class=DishkaRoute
 )
 
 
@@ -34,9 +31,7 @@ async def signup(user: UserCreateSchema, auth_service: FromDishka[AuthService]):
 
 
 @router.post("/login", response_model=Token)
-async def login(
-    auth_service: FromDishka[AuthService],
-    form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(auth_service: FromDishka[AuthService], form_data: OAuth2PasswordRequestForm = Depends()):
     """
     Route for signing in the user.
 

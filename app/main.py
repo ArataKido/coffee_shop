@@ -5,7 +5,7 @@ from fastapi_pagination.utils import disable_installed_extensions_check
 from dishka.integrations.fastapi import setup_dishka
 
 from app.dependencies.container import create_container
-from app.middleware.logging_middleware import LoggingMiddleware  # noqa: F401
+from app.middleware.logging_middleware import LoggingMiddleware
 from app.routers import auth, cart, categories, orders, products, users
 
 
@@ -16,7 +16,7 @@ app = FastAPI(
     contact={"name": "Shahzod Ravshanov", "telegram": "https://t.me/ArataKido"},
 )
 
-app.add_middleware(LoggingMiddleware)  # noqa: ERA001
+app.add_middleware(LoggingMiddleware)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 
-    # Include routers
+# Include routers
 app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(orders.router)
@@ -39,6 +39,4 @@ app.include_router(users.router)
 setup_dishka(container=create_container(), app=app)
 add_pagination(app)
 disable_installed_extensions_check()
-
-
 

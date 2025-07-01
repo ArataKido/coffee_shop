@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.cart import Cart
+from app.models.product import Product
 from app.models.cart_product import CartProduct
 from app.repositories.base_repository import BaseRepository
 from app.schemas.cart_schema import CartProductCreate
@@ -30,15 +31,13 @@ class CartRepository(BaseRepository):
         result = await self.db.execute(query)
         return result.scalars().first()
 
-    async def create_cart(self, user_id:int) -> None:
+    async def create_cart(self, user_id: int) -> None:
         cart = self.cart_repo.create_model(user_id=user_id)
         await self.cart_repo.add_and_commit(cart)
 
-    async def add_product_to_cart(self, cart_id:int, user_id:int, product_data:CartProductCreate):
+    async def add_product_to_cart(self, cart_id: int, user_id: int, product_data: CartProductCreate):
         try:
-            cart_product = await self.find_product_in_cart(
-                user_id=user_id, product_id=product_data.product_id
-                )
+            cart_product = await self.find_product_in_cart(user_id=user_id, product_id=product_data.product_id)
             if cart_product:
                 # Update quantity
                 cart_product.quantity += product_data.quantity
@@ -54,10 +53,25 @@ class CartRepository(BaseRepository):
             self.logger.exception(f"Error adding item to cart for user {user_id}: {e!s}")
             await self.db.rollback()
 
+    async def update_cart_product(self, cart_product: CartProduct, product_data: Product, product_id: int) -> None:
+        try:
+            if product_data.quantity <= 0:
+                # Remove item if quantity is zero or negative
+                await self.delete_product_from_cart(cart_id=cart_product.cart_id, product_id=product_id)
+            else:
+                # Update quantity
+                cart_product.quantity = product_data.quantity
+                await self.db.commit()
+        except Exception as e:
+            self.logger.exception(f"Error updating cart item {product_id} for cart {cart_product.id}: {e!s}")
+            self.rollback()
+
     async def delete_product_from_cart(self, cart_id: int, product_id: int) -> None:
         query = delete(CartProduct).where(CartProduct.cart_id == cart_id, CartProduct.product_id == product_id)
         await self.db.execute(query)
+        await self.commit()
 
     async def clear_cart(self, user_id: int) -> None:
         query = delete(CartProduct).where(CartProduct.cart.has(Cart.user_id == user_id))
         await self.db.execute(query)
+        await self.db.commit()

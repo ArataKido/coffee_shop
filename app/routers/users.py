@@ -7,10 +7,7 @@ from app.schemas.user_schema import UserSchema, UserUpdateSchema
 from app.services.user_service import UserService
 
 router = APIRouter(
-    prefix="/users",
-    tags=["users"],
-    responses={404: {"description": "Not found"}},
-    route_class=DishkaRoute
+    prefix="/users", tags=["users"], responses={404: {"description": "Not found"}}, route_class=DishkaRoute
 )
 
 

@@ -1,14 +1,14 @@
 from dishka.integrations.fastapi import FromDishka, inject
-from typing_extensions import deprecated
 from fastapi import Depends, HTTPException, status
 
 from app.schemas.user_schema import UserSchema
 from app.services.auth_service import AuthService
 from app.utils.security import oauth2_scheme
 
+
 @inject
 async def get_current_active_user(
-    auth_service:FromDishka[AuthService],
+    auth_service: FromDishka[AuthService],
     token: str = Depends(oauth2_scheme),
 ) -> UserSchema:
     # auth_service = AuthService()

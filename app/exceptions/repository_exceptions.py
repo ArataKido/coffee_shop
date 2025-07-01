@@ -2,11 +2,10 @@ class RepositoryException(Exception):
     """Base exception for all domain-specific exceptions."""
 
 
-
 class EntityNotFoundException(RepositoryException):
     """Raised when an entity cannot be found."""
 
-    def __init__(self, entity_type: str, entity_id: any):
+    def __init__(self, entity_type: str, entity_id: int):
         self.entity_type = entity_type
         self.entity_id = entity_id
         self.message = f"{entity_type} with id {entity_id} not found"

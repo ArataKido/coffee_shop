@@ -5,10 +5,10 @@ from app.services import (
     cart_service,
     category_service,
     email_service,
-    order_service,
     product_service,
     user_service,
     auth_service,
+    order_service,
 )
 from app.utils.loggers.logger import Logger
 from app.config import Config
@@ -24,7 +24,7 @@ class ServiceProvider(Provider):
     #     return user_service.UserService(app_config=config.app)
 
     @provide(scope=scope.APP)
-    def get_logger(self, config:Config) -> Logger:
+    def get_logger(self, config: Config) -> Logger:
         return Logger(config.app)
 
     interaction = provide_all(
@@ -34,6 +34,7 @@ class ServiceProvider(Provider):
         product_service.ProductService,
         auth_service.AuthService,
         user_service.UserService,
+        order_service.OrderService,
     )
     # get_cart_service = provide(cart_service.CartService)
     # get_category_service = provide(category_service.CategoryService)

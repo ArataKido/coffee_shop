@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated
 from dishka.integrations.fastapi import FromDishka, DishkaRoute
 
 from app.dependencies.auth_dependencies import get_current_active_user
@@ -7,15 +8,15 @@ from app.services.cart_service import CartService
 from app.schemas.user_schema import UserSchema
 
 router = APIRouter(
-    prefix="/cart",
-    tags=["cart"],
-    responses={404: {"description": "Not found"}},
-    route_class=DishkaRoute
+    prefix="/cart", tags=["cart"], responses={404: {"description": "Not found"}}, route_class=DishkaRoute
 )
 
 
 @router.get("/", response_model=CartDetail)
-async def read_user_cart(cart_service: FromDishka[CartService], user=Depends(get_current_active_user)):
+async def read_user_cart(
+    cart_service: FromDishka[CartService],
+    user:Annotated[UserSchema, Depends(get_current_active_user)]
+    ):
     """
     Get a user's cart with items
 
@@ -39,7 +40,7 @@ async def read_user_cart(cart_service: FromDishka[CartService], user=Depends(get
 async def add_product_to_cart(
     item: CartProductCreate,
     cart_service: FromDishka[CartService],
-    user: UserSchema = Depends(get_current_active_user),
+    user: Annotated[UserSchema, Depends(get_current_active_user)],
 ):
     """
     Add item to users cart
@@ -66,7 +67,7 @@ async def update_cart_product(
     product_id: int,
     item_data: CartItemUpdate,
     cart_service: FromDishka[CartService],
-    user: UserSchema = Depends(get_current_active_user),
+    user: Annotated[UserSchema, Depends(get_current_active_user)],
 ):
     """
     Update item in users cart
@@ -92,7 +93,7 @@ async def update_cart_product(
 async def remove_cart_product(
     product_id: int,
     cart_service: FromDishka[CartService],
-    user: UserSchema = Depends(get_current_active_user),
+    user: Annotated[UserSchema, Depends(get_current_active_user)],
 ):
     """
     Revome item from users cart
@@ -114,9 +115,7 @@ async def remove_cart_product(
 
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
-async def clear_cart(
-    cart_service: FromDishka[CartService], user: UserSchema = Depends(get_current_active_user)
-):
+async def clear_cart(cart_service: FromDishka[CartService], user: Annotated[UserSchema, Depends(get_current_active_user)]):
     """Clear all items from the cart"""
     success = await cart_service.clear_cart(user.id)
     if not success:

@@ -14,6 +14,7 @@ from app.dependencies.providers.service_provider import ServiceProvider
 config = Config()
 logger = ServiceProvider().get_logger(config)
 
+
 def get_replay_receive(body_bytes: bytes):
     """Return an ASGI receive() that replays body_bytes once, then empties."""
     received = False
@@ -30,10 +31,7 @@ def get_replay_receive(body_bytes: bytes):
     return receive
 
 
-
 class LoggingMiddleware(BaseHTTPMiddleware):
-
-
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
         try:
@@ -45,12 +43,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             if request.method in ("POST", "PUT", "PATCH"):
                 if "application/x-www-form-urlencoded" in content_type:
                     from starlette.datastructures import FormData
-                    # Parse form data from bytes
                     from urllib.parse import parse_qs
                     parsed = parse_qs(req_body_bytes.decode())
                     req_body = dict((k, v[0] if len(v) == 1 else v) for k, v in parsed.items())
                 elif "application/json" in content_type:
                     import json
+
                     try:
                         req_body = json.loads(req_body_bytes)
                     except Exception:
@@ -59,41 +57,40 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             # Patch the request stream so downstream can read it again
             async def receive():
                 return {"type": "http.request", "body": req_body_bytes, "more_body": False}
+
             request._receive = receive
 
             response = await call_next(request)
             res_body = [section async for section in response.body_iterator]
             response.body_iterator = iterate_in_threadpool(iter(res_body))
-            if res_body:
-                res_body = res_body[0].decode()
-
-            task = BackgroundTask(
-                log_request_response, request, response, res_body, req_body, start_time
-            )
+            res_body_bytes = b"".join(res_body)
+            try:
+                res_body_str = res_body_bytes.decode()
+            except Exception:
+                res_body_str = str(res_body_bytes)
+            task = BackgroundTask(log_request_response, request, response, res_body_str, req_body, start_time)
 
             return Response(
-                content=res_body,
+                content=res_body_str,
                 status_code=response.status_code,
                 headers=dict(response.headers),
                 media_type=response.media_type,
                 background=task,
             )
         except WouldBlock as e:
-            logger.exception(f"WouldBlock error encountered: {e!s}")
+            logger.error(f"WouldBlock error encountered: {e!s}")  # noqa: TRY400
             return Response(content="Service temporarily unavailable.", status_code=503)
         except JSONDecodeError as e:
             process_time = time.time() - start_time
-            logger.exception(f"Error during request - Time taken: {process_time:.4f}s")
-            logger.exception(f"Request json is empty. Details: {e!s}")
+            logger.error(f"Error during request - Time taken: {process_time:.4f}s")  # noqa: TRY400
+            logger.error(f"Request json is empty. Details: {e!s}")  # noqa: TRY400
             raise
-
         except Exception as e:
             process_time = time.time() - start_time
 
-            logger.exception(f"Error during request - Time taken: {process_time:.4f}s")
-            logger.exception(f"Error details: {e}")
-            logger.exception("-------------------------")
-
+            logger.error(f"Error during request - Time taken: {process_time:.4f}s")  # noqa: TRY400
+            logger.error(f"Error details: {e}")  # noqa: TRY400
+            logger.error("-------------------------")  # noqa: TRY400
             raise
 
 

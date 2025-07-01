@@ -5,12 +5,10 @@ from dishka.integrations.fastapi import FromDishka, DishkaRoute
 from app.dependencies.auth_dependencies import user_is_admin
 from app.schemas.product_schema import ProductCreate, ProductDetail, ProductInDB, ProductUpdate
 from app.services.product_service import ProductService
+from typing import Annotated
 
 router = APIRouter(
-    prefix="/products",
-    tags=["products"],
-    responses={404: {"description": "Not found"}},
-    route_class=DishkaRoute
+    prefix="/products", tags=["products"], responses={404: {"description": "Not found"}}, route_class=DishkaRoute
 )
 
 
@@ -30,9 +28,9 @@ async def create_product(
 @router.get("/", response_model=Page[ProductInDB])
 async def read_products(
     product_service: FromDishka[ProductService],
-    category_id: int | None = Query(None, description="Filter by category ID"),
-    limit: int | None = Query(None, description="Limit how many products you retrieve "),
-    offset: int | None = Query(None),
+    category_id: Annotated[int | None, Query(description="Filter by category ID")] = None,
+    limit: Annotated[int | None, Query(description="Limit how many products you retrieve ")] = None,
+    offset: Annotated[int | None, Query()] = None,
 ):
     """Get all products, optionally filtered by category"""
     if category_id:
@@ -40,6 +38,8 @@ async def read_products(
     else:
         products = await product_service.get_all_products()
 
+    if not products:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Products were not found")
     return paginate(products)
 
 
@@ -67,9 +67,7 @@ async def update_product(
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_product(
-    product_id: int, product_service: FromDishka[ProductService], user=Depends(user_is_admin)
-):
+async def delete_product(product_id: int, product_service: FromDishka[ProductService], user=Depends(user_is_admin)):
     """Delete a product"""
     success = await product_service.delete_product(product_id)
     if not success:
