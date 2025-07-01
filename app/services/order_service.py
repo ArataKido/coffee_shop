@@ -1,5 +1,4 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.order import OrderStatus
 from app.repositories.order_repository import OrderRepository
 from app.repositories.product_repository import ProductRepository
@@ -8,9 +7,10 @@ from app.utils.tasks import send_admin_order_notification
 from app.utils.loggers.logger import Logger
 
 
-
 class OrderService:
-    def __init__(self, db: AsyncSession, order_repository: OrderRepository, product_repository: ProductRepository, logger:Logger):
+    def __init__(
+        self, db: AsyncSession, order_repository: OrderRepository, product_repository: ProductRepository, logger: Logger
+    ):
         self.db = db
         self.order_repo = order_repository
         self.product_repo = product_repository
@@ -22,29 +22,31 @@ class OrderService:
             order = await self.order_repo.find_with_items(order_id)
             if not order:
                 return None
-
             return OrderDetail.model_validate(order)
+
         except Exception as e:
             self.logger.exception(f"Error getting order by ID {order_id}: {e!s}")
             return None
 
-    async def get_all_orders(self) -> list[OrderInDB]:
+    async def get_all_orders(self) -> list[OrderInDB] | None:
         """Get all orders"""
         try:
             orders = await self.order_repo.find_all()
             return [OrderInDB.model_validate(order) for order in orders]
+
         except Exception as e:
             self.logger.exception(f"Error getting all orders: {e!s}")
-            return []
+            return None
 
-    async def get_user_orders(self, user_id: int, order_status: OrderStatus = None) -> list[OrderInDB]:
+    async def get_user_orders(self, user_id: int, order_status: OrderStatus = None) -> list[OrderInDB] | None:
         """Get orders for a specific user"""
         try:
             orders = await self.order_repo.find_all_by(user_id=user_id, status=order_status)
             return [OrderInDB.model_validate(order) for order in orders]
+
         except Exception as e:
             self.logger.exception(f"Error getting orders for user {user_id}: {e!s}")
-            return []
+            return None
 
     async def create_order(self, order_data: OrderCreate, creator_id: int | None = None) -> OrderDetail | None:
         """Create a new order with items"""
@@ -54,6 +56,7 @@ class OrderService:
             send_admin_order_notification.apply_async(args=[order.user_id, order.id])
             # Get complete order with items
             return await self.get_order_by_id(order.id)
+
         except Exception as e:
             self.logger.exception(f"Error creating order: {e!s}")
             return None
@@ -76,6 +79,7 @@ class OrderService:
             # Update in database
             await self.order_repo.update_and_commit(order, updated_by_user_id=updater_id)
             return OrderInDB.model_validate(order)
+
         except Exception as e:
             self.logger.exception(f"Error updating order {order_id}: {e!s}")
             return None
@@ -96,6 +100,7 @@ class OrderService:
 
             self.order_repo.delete_order(order=order, updater_id=updater_id)
             return True
+
         except Exception as e:
             self.logger.exception(f"Error cancelling order {order_id}: {e!s}")
             return False

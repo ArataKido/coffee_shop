@@ -1,13 +1,11 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
 from app.config import Config
-
-
+from app.utils.loggers.logger import Logger
 
 class EmailService:
-    def __init__(self, config:Config):
+    def __init__(self, config: Config, logger:Logger):
         """Initialize EmailService with configuration from settings"""
         self.settings = config.smtp
         self.smtp_server = self.settings.smtp_server
@@ -16,6 +14,7 @@ class EmailService:
         self.smtp_password = self.settings.smtp_password
         self.sender_email = self.settings.sender_email
         self.verification_url = self.settings.verification_base_url
+        self.logger = logger
 
     def get_smtp(self):
         try:
@@ -24,7 +23,7 @@ class EmailService:
             server.login(self.smtp_username, self.smtp_password)
             return server
         except Exception as e:
-            print(f"Error while creating server: {e}")
+            self.logger.exception(f"Error while creating server: {e}")
             return None
 
     def send_verification_email_sync(self, recipient_email, token):
@@ -70,8 +69,8 @@ class EmailService:
             # Send email
             server.send_message(message)
             return True
-        except Exception as e:
-            print(f"Failed to send email: {e!s}")
+        except Exception:
+            self.logger.exception(f"Failed to send email")
             return False
         finally:
             server.quit()
@@ -94,7 +93,7 @@ class EmailService:
         admin_emails = ["user12@coffee.com", "user2@coffee.com"]
         for recipient_email in admin_emails:
             if not recipient_email:  # Check for empty email
-                print("Skipping empty email address.")
+                self.logger.exception("Skipping empty email address.")
                 continue
 
             # Create a new message for each recipient
@@ -118,11 +117,11 @@ class EmailService:
 
             try:
                 server = self.get_smtp()  # Create SMTP connection
-                print(f"Sending email to: {recipient_email}")  # Log the recipient
+                self.logger.exception(f"Sending email to: {recipient_email}")  # Log the recipient
                 server.send_message(message)  # Send the email
                 sent_count += 1  # Increment the counter for successfully sent emails
-            except Exception as e:
-                print(f"Failed to send email to {recipient_email}: {e!s}")
+            except Exception:
+                self.logger.exception(f"Failed to send email to {recipient_email}")
             finally:
                 server.quit()  # Close the connection after each send
 

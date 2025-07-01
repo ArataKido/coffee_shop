@@ -1,15 +1,9 @@
 from base64 import b64decode, b64encode
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
 from app.config import Config
 from app.repositories.user_repository import UserRepository
 from app.schemas.user_schema import UserCreateSchema, UserSchema, UserUpdateSchema, UserWithPassword
-from app.utils.security import get_password_hash
 from app.utils.tasks import check_user_status_task, send_verification_email_task
 from app.utils.loggers.logger import Logger
-
 
 
 class UserService:
@@ -18,8 +12,7 @@ class UserService:
     This demonstrates the proper way to use repositories in a layered architecture.
     """
 
-    def __init__(self, db: AsyncSession , user_repository: UserRepository, logger:Logger, config:Config):
-        self.db = db
+    def __init__(self, user_repository: UserRepository, logger: Logger, config: Config):
         self.user_repo = user_repository
         self.logger = logger
         self.config = config.app
@@ -29,8 +22,8 @@ class UserService:
         try:
             user = await self.user_repo.find_by(id=user_id)
             return UserSchema.model_validate(user) if user else None
-        except Exception as e:
-            self.logger.exception(f"Error getting user by ID {user_id}: {e!s}")
+        except Exception:
+            self.logger.exception(f"Error getting user by ID {user_id}")
             return None
 
     async def get_user_by_username(self, username: str) -> UserSchema | None:
@@ -38,8 +31,8 @@ class UserService:
         try:
             user = await self.user_repo.find_by(username=username)
             return UserSchema.model_validate(user) if user else None
-        except Exception as e:
-            self.logger.exception(f"Error getting user by username {username}: {e!s}")
+        except Exception:
+            self.logger.exception(f"Error getting user by username {username}")
             return None
 
     async def get_user_for_auth(self, username: str) -> UserWithPassword | None:
@@ -50,8 +43,8 @@ class UserService:
         try:
             user = await self.user_repo.find_by(username=username)
             return UserWithPassword.model_validate(user) if user else None
-        except Exception as e:
-            self.logger.exception(f"Error getting user by username {username}: {e!s}")
+        except Exception:
+            self.logger.exception(f"Error getting user by username {username}")
             return None
 
     # Синхронная версия для Celery
@@ -60,8 +53,8 @@ class UserService:
         try:
             user = self.user_repo.find_by_sync(id=user_id)
             return UserSchema.model_validate(user) if user else None
-        except Exception as e:
-            self.logger.exception(f"Error getting user by ID {user_id}: {e!s}")
+        except Exception:
+            self.logger.exception(f"Error getting user by ID {user_id}")
             return None
 
     async def get_user_by_email(self, email: str) -> UserSchema | None:
@@ -69,8 +62,8 @@ class UserService:
         try:
             user = await self.user_repo.find_by(email=email)
             return UserSchema.model_validate(user) if user else None
-        except Exception as e:
-            self.logger.exception(f"Error getting user by email {email}: {e!s}")
+        except Exception:
+            self.logger.exception(f"Error getting user by email {email}")
             return None
 
     async def get_all_users(self) -> list[UserSchema]:
@@ -78,19 +71,20 @@ class UserService:
         try:
             users = await self.user_repo.get_all()
             return [UserSchema.model_validate(user) for user in users]
-        except Exception as e:
-            self.logger.exception(f"Error getting all users: {e!s}")
+        except Exception:
+            self.logger.exception("Error getting all users")
             return []
 
     def get_admin_emails_sync(self) -> list[str] | None:
         try:
             admins = self.user_repo.get_all_admins_sync()
-
             return [admin.email for admin in admins]
-        except Exception as e:
-            self.logger.exception(f"Error getting admin emails: {e!s}")
+        except Exception:
+            self.logger.exception("Error getting admin emails")
             return None
 
+    #TODO: Concurrency error might occure while creating user.
+    #if process_user_action fails, user must be deleted
     async def create_user(self, user_data: UserCreateSchema, creator_id: int | None = None) -> UserSchema | None:
         """Create a new user."""
         try:
@@ -101,27 +95,22 @@ class UserService:
                 return None
 
             # Create user using repository factory method
-            user = self.user_repo.create_model(
+            user = self.user_repo._create_model(
                 username=user_data.username,
                 email=user_data.email,
                 password=user_data.password,  # In real app, hash this!
             )
 
-            # Save user to database
             created_user = await self.user_repo.add_and_commit(user, created_by_user_id=creator_id)
-            await self.process_user_action(created_user.email, created_user.id)
+            await self._process_user_action(created_user.email, created_user.id)
             return UserSchema.model_validate(created_user)
-        except Exception as e:
-            self.logger.exception(f"Error creating user: {e!s}")
-            # You might want to handle transaction rollback here if necessary
-            await self.db.rollback()
+        except Exception:
+            self.logger.exception("Error while creating user")
             return None
 
     async def patch_update_user(self, user_id: int, user_data: UserUpdateSchema) -> UserSchema | None:
         """
         Patch update method for user.
-        I would prefer generic method for all models, but because
-        I am short on time, I wrote this method.
         """
         try:
             user = await self.user_repo.find_by(id=user_id)
@@ -129,23 +118,10 @@ class UserService:
                 self.logger.warning(f"User with ID {user_id} not found")
                 return None
 
-            if user_data.username is not None:
-                user.username = user_data.username
-            if user_data.email is not None:
-                user.email = user_data.email
-            if user_data.password is not None:
-                user.password = await get_password_hash(user_data.password)  # Hash password if updating
-            if user_data.is_admin is not None:
-                user.is_admin = user_data.is_admin
-            if user_data.is_active is not None:
-                user.is_active = user_data.is_active
-
-            # Update and commit using the repository
-            updated_user = await self.user_repo.update_and_commit(user)
-            return UserSchema.model_validate(updated_user)
-        except Exception as e:
-            self.logger.exception(f"Error updating user {user_id}: {e!s}")
-            await self.db.rollback()
+            user = await self.user_repo.patch_update_user(user_data=user_data, user=user)
+            return UserSchema.model_validate(user)
+        except Exception:
+            self.logger.exception(f"Error updating user {user_id}")
             return None
 
     async def activate_user(self, verification_token: str) -> bool:
@@ -156,11 +132,9 @@ class UserService:
                 self.logger.warning(f"User with ID {user_id} not found for activation")
 
             await self.user_repo.activate(user)
-            await self.db.commit()
             return True
-        except Exception as e:
-            self.logger.exception(f"Error activating user with verification token {verification_token}: {e!s}")
-            await self.db.rollback()
+        except Exception:
+            self.logger.exception(f"Error activating user with verification token {verification_token}")
             return False
 
     async def soft_delete_user(self, user_id: int, deactivator_id: int | None = None) -> bool:
@@ -170,40 +144,32 @@ class UserService:
             if not user:
                 self.logger.warning(f"User with ID {user_id} not found for deactivation")
                 return False
-
             await self.user_repo.soft_delete(user, deleted_by_user_id=deactivator_id)
-            await self.db.commit()
             return True
-        except Exception as e:
-            self.logger.exception(f"Error deactivating user {user_id}: {e!s}")
-            await self.db.rollback()
+        except Exception:
+            self.logger.exception(f"Error deactivating user {user_id}")
             return False
 
     async def delete_user(self, user_id: int) -> bool:
         try:
             await self.user_repo.permanent_delete(user_id)
-            await self.db.commit()
             return True
-        except Exception as e:
-            self.logger.exception(f"Error deleting user {user_id}: {e!s}")
-            await self.db.rollback()
+        except Exception:
+            self.logger.exception(f"Error deleting user {user_id}")
             return False
 
     # Синхронная версия для Celery
     def delete_user_sync(self, user_id: int) -> bool:
         try:
             self.user_repo.permanent_delete_sync(user_id)
-            self.db.commit()
             return True
-        except Exception as e:
-            self.logger.error(f"Error deleting user {user_id}: {e!s}")
-            self.db.rollback()
+        except Exception:
+            self.logger.exception(f"Error deleting user {user_id}")
             return False
 
-    async def process_user_action(self, user_email: int, user_id: int) -> None:
+    async def _process_user_action(self, user_email: int, user_id: int) -> None:
         token = await self._generate_verification_token(user_id)
         send_verification_email_task.apply_async(args=[user_email, token])
-
         check_user_status_task.apply_async(args=[user_id], countdown=self.config.user_delete_timeout)
 
     async def is_user_active(self, user_id: int) -> bool:
