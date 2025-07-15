@@ -15,34 +15,21 @@ class OrderRepository(BaseRepository):
         super().__init__(db, Order)
 
     async def create_order(self, order_data: OrderCreate, creator_id: int | None) -> Order:
-        try:
-            order = self._create_model(
-                user_id=order_data.user_id,
-                status=OrderStatus.PENDING,
-                total_amount=0,  # Will update after adding items
-            )
-            order = self.add(order, created_by_user_id=creator_id)
-            items = self._add_items_to_order(self, order_id=order.id, items=order_data.items)
-            order.total_amount = self._count_total_price(items)
-            self.db.commit()
-            return order
-        except EntityNotFoundException:
-            self.db.rollback()
-            return None
-        except Exception as e:
-            self.logger.exception(f"Error creating order: {e!s}")
-            self.db.rollback()
-            return None
+        order = self._create_model(
+            user_id=order_data.user_id,
+            status=OrderStatus.PENDING,
+            total_amount=0,  # Will update after adding items
+        )
+        order = self.add(order, created_by_user_id=creator_id)
+        items = self._add_items_to_order(self, order_id=order.id, items=order_data.items)
+        order.total_amount = self._count_total_price(items)
+        self.db.commit()
+        return order
 
     async def delete_order(self, order: Order, updater_id: int) -> None:
-        try:
-            order.status = OrderStatus.CANCELLED
-            await self.update(order, updated_by_user_id=updater_id)
-            await self.soft_delete(order, deleted_by_user_id=updater_id)
-            await self.db.commit()
-        except Exception as e:
-            self.logger.exception(f"Error cancelling order {order.id}: {e!s}")
-            await self.db.rollback()
+        order.status = OrderStatus.CANCELLED
+        await self.update(order, updated_by_user_id=updater_id)
+        await self.soft_delete(order, deleted_by_user_id=updater_id)
 
     async def _add_items_to_order(self, order_id: int, items: list[OrderItemCreate]) -> list[OrderItem]:
         items = []

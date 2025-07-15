@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
-
+from sqlalchemy.exc import OperationalError
 # from httpx import HTTPStatusError, NetworkError, TimeoutException
 
 
@@ -10,6 +10,11 @@ async def handle_http_exception(request: Request, exc: HTTPException):
         content={"detail": exc.detail or "Internal Server Error"},
     )
 
+async def handle_database_exception(request:Request, exc:OperationalError):
+    return JSONResponse(
+        status_code=exc.status_code or 500,
+        content={"detail": exc.detail or "Internal Server Error"}
+    )
 
 # async def handle_http_status_error(request: Request, exc: HTTPStatusError):
 #     return JSONResponse(

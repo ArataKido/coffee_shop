@@ -36,10 +36,3 @@ class ServiceProvider(Provider):
         user_service.UserService,
         order_service.OrderService,
     )
-    # get_cart_service = provide(cart_service.CartService)
-    # get_category_service = provide(category_service.CategoryService)
-    # get_email_service = provide(email_service.EmailService)
-    # get_order_service = provide(order_service.OrderService)
-    # get_product_service = provide(product_service.ProductService)
-    # get_auth_service = provide(auth_service.AuthService)
-    # get_auth_service = provide(auth_service.AuthService)

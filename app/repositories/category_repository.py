@@ -15,18 +15,13 @@ class CategoryRepository(BaseRepository):
     async def update_category(
         self, category: Category, category_update: CategoryUpdate, updater_id: int
     ) -> Category | None:
-        try:
-            if category_update.name is not None:
-                category.name = category_update.name
-            if category_update.description is not None:
-                category.description = category_update.description
-            if category_update.is_active is not None:
-                category.is_active = category_update.is_active
+        if category_update.name is not None:
+            category.name = category_update.name
+        if category_update.description is not None:
+            category.description = category_update.description
+        if category_update.is_active is not None:
+            category.is_active = category_update.is_active
 
-            # Update in database
-            await self.category_repo.update_and_commit(category, updated_by_user_id=updater_id)
-            return category
-        except Exception as e:
-            self.logger.exception(f"Error updating category {category.id}: {e!s}")
-            await self.db.rollback()
-            return None
+        # Update in database
+        await self.category_repo.update_and_commit(category, updated_by_user_id=updater_id)
+        return category

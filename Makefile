@@ -58,6 +58,11 @@ populate:
 	@echo "Populating database with test data..."
 	$(DOCKER_COMPOSE) exec -T db  psql -U postgres -d coffee_shop < sql/test_data.sql
 
+run_dev:
+	uv run uvicorn app.main:app --reload
+
+run: 
+	uv run uvicorn app.main:app 
 
 help:
 	@echo "Available commands:"
