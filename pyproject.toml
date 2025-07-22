@@ -57,7 +57,6 @@ dependencies = [
     "tornado==6.4",
     "typing-extensions==4.13.2",
     "tzdata==2025.2",
-    "uv==0.7.3",
     "uvicorn==0.27.1",
     "vine==5.1.0",
     "wcwidth==0.2.13",
@@ -69,10 +68,18 @@ dependencies = [
 line-length = 120
 target-version = "py312"
 extend-exclude = ["migrations/", ]
-lint.select = [
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = [
     "ALL", # include all the rules, including new ones
 ]
-lint.ignore = [
+ignore = [
     #### modules
     "ANN", # flake8-annotations
     "COM", # flake8-commas
@@ -84,6 +91,7 @@ lint.ignore = [
 
     #### specific rules
     "I001",
+    "EM102",
     "D100",   # ignore missing docs
     "D101",
     "D102",
@@ -100,8 +108,10 @@ lint.ignore = [
     "D400",
     "D401",
     "D415",
+    "D417", # Temp shuting off, docstrings
     "E402",   # false positives for local imports
     "E501",   # line too long
+    "RUF012",
     "TRY003", # external messages in exceptions are too verbose
     "TRY300", 
     "TD002",

@@ -52,28 +52,23 @@ class ProductService:
 
     async def create_product(self, product_data: ProductCreate, creator_id: int | None = None) -> ProductInDB | None:
         """Create a new product"""
-        try:
-            # Check if category exists
-            category = await self.category_repo.find_by_id(product_data.category_id)
-            if not category or not category.is_active:
-                self.logger.warning(f"Category with ID {product_data.category_id} not found or inactive")
-                return None
-
-            # Create product
-            product = self.product_repo._create_model(
-                name=product_data.name,
-                description=product_data.description,
-                price=product_data.price,
-                image_url=product_data.image_url,
-                category_id=product_data.category_id,
-            )
-            # Save to database
-            created_product = await self.product_repo.add_and_commit(product, created_by_user_id=creator_id)
-            return ProductInDB.model_validate(created_product)
-        except Exception:
-            self.logger.exception("Error creating product")
-            await self.db.rollback()
+        # Check if category exists
+        category = await self.category_repo.find_by_id(product_data.category_id)
+        if not category or not category.is_active:
+            self.logger.warning(f"Category with ID {product_data.category_id} not found or inactive")
             return None
+
+        # Create product
+        product = self.product_repo._create_model(
+            name=product_data.name,
+            description=product_data.description,
+            price=product_data.price,
+            image_url=product_data.image_url,
+            category_id=product_data.category_id,
+        )
+        # Save to database
+        created_product = await self.product_repo.add_and_commit(product, created_by_user_id=creator_id)
+        return ProductInDB.model_validate(created_product)
 
     async def update_product(
         self, product_id: int, product_data: ProductUpdate, updater_id: int | None = None

@@ -18,18 +18,14 @@ class UserRepository(BaseRepository):
         return result.scalars().all()
 
     async def patch_update_user(self, user_data:UserUpdateSchema, user:User) -> User:
-        try:
-            # Update fields if provided
-            for field in ["username", "email", "is_admin", "is_active"]:
-                value = getattr(user_data, field)
-                if value is not None:
-                    setattr(user, field, value)
+        # Update fields if provided
+        for field in ["username", "email", "is_admin", "is_active"]:
+            value = getattr(user_data, field)
+            if value is not None:
+                setattr(user, field, value)
 
-            if user_data.password is not None:
-                user.password = await get_password_hash(user_data.password)
-            # Update and commit using the repository
-            return await self.user_repo.update_and_commit(user)
-        except Exception:
-            self.logger.exception(f"Error updating user {user.id}")
-            self.db.rollback()
+        if user_data.password is not None:
+            user.password = await get_password_hash(user_data.password)
+        # Update and commit using the repository
+        return await self.user_repo.update_and_commit(user)
 

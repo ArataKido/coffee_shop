@@ -1,4 +1,4 @@
-from exceptions import defined_exceptions
+from app.exceptions import defined_exceptions
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 

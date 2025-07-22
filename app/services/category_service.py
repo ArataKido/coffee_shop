@@ -20,13 +20,14 @@ class CategoryService:
 
     async def get_all_categories(self) -> list[CategoryInDB] | None:
         """Get all categories"""
-        try:
-            categories = await self.category_repo.get_all()
-            return [CategoryInDB.model_validate(cat) for cat in categories]
+        # try:
 
-        except Exception as e:
-            self.logger.exception(f"Error getting all categories: {e!s}")
-            return None
+        categories = await self.category_repo.get_all()
+        return [CategoryInDB.model_validate(cat) for cat in categories]
+
+        # except Exception as e:
+        #     self.logger.exception(f"Error getting all categories: {e!s}")
+        #     return None
 
     async def create_category(
         self, category_data: CategoryCreate, creator_id: int | None = None
